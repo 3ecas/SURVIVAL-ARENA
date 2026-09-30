@@ -1,0 +1,12 @@
+{
+  "name": "survival-arena",
+  "version": "1.0.0",
+  "description": "Top-down round-based zombie survival game (HTML5 canvas, vanilla ES modules)",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "python3 -m http.server 8000",
+    "check-map": "node tools/check-map.js"
+  },
+  "license": "MIT"
+}
