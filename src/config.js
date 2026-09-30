@@ -18,10 +18,13 @@ export const CONTROLS = {
   GRENADE: ['KeyG'],
   DECOY: ['KeyQ'],
   INTERACT: ['KeyE'],
+  HEAL: ['KeyH'],
+  FLASHLIGHT: ['KeyF'],
   WEAPON_1: ['Digit1'],
   WEAPON_2: ['Digit2'],
-  RESTART: ['Enter', 'Space'],
-  SWITCH_MAP: ['KeyM'],
+  CRAFT: ['Enter'],
+  DEPLOY: ['Space'],
+  NEW_RUN: ['KeyN'],
   FIRE_BUTTON: 0,
   MELEE_BUTTON: 2,
 };
@@ -30,23 +33,26 @@ export const PLAYER = {
   RADIUS: 14,
   SPEED: 220,
   MAX_HEALTH: 100,
-  REGEN_DELAY: 4,
-  REGEN_RATE: 35,
-  START_POINTS: 500,
-  START_GRENADES: 2,
+  REGEN_DELAY: 6,
+  REGEN_RATE: 0, // no passive regeneration in expedition mode; use bandages
+  START_GRENADES: 1,
   MAX_GRENADES: 4,
-  GRENADES_PER_ROUND: 2,
   START_DECOYS: 1,
   MAX_DECOYS: 2,
-  DECOY_EVERY_N_ROUNDS: 3,
+  START_BANDAGES: 1,
+  MAX_BANDAGES: 5,
+  BANDAGE_HEAL: 40,
+  BANDAGE_TIME: 2.5,
   MAX_WEAPONS: 2,
   INTERACT_RANGE: 70,
+  PICKUP_RANGE: 26,
   AIM_LINE_LENGTH: 24,
   DAMAGE_FLASH_TIME: 0.3,
   THROW_COOLDOWN: 0.5,
 };
 
 export const MELEE = {
+  NAME: 'Knife',
   RANGE: 52,
   ARC: Math.PI * 0.9,
   DAMAGE: 150,
@@ -58,14 +64,12 @@ export const ZOMBIE = {
   RADIUS: 14,
   HEAD_RADIUS: 6,
   BASE_HEALTH: 100,
-  HEALTH_PER_ROUND: 60,
-  LINEAR_HEALTH_ROUNDS: 9,
-  HEALTH_GROWTH: 1.1,
+  HEALTH_PER_LEVEL: 30,
   WALKER_SPEED: 74,
-  WALKER_SPEED_PER_ROUND: 3,
+  WALKER_SPEED_PER_LEVEL: 3,
   WALKER_MAX_SPEED: 115,
   RUNNER_SPEED: 150,
-  RUNNER_SPEED_PER_ROUND: 3,
+  RUNNER_SPEED_PER_LEVEL: 3,
   RUNNER_MAX_SPEED: 185,
   ATTACK_REACH: 10,
   ATTACK_DAMAGE: 25,
@@ -79,22 +83,71 @@ export const ZOMBIE = {
   PLAYER_PUSH_SHARE: 0.25,
 };
 
-export const ROUNDS = {
-  FIRST_ROUND_DELAY: 3,
-  INTERMISSION: 6,
-  ANNOUNCE_TIME: 3,
-  BASE_COUNT: 6,
-  COUNT_PER_ROUND: 3,
-  COUNT_QUADRATIC: 0.1,
-  MAX_ALIVE: 24,
-  SPAWN_INTERVAL: 1.2,
-  SPAWN_INTERVAL_DECAY: 0.05,
-  MIN_SPAWN_INTERVAL: 0.4,
-  RUNNER_START_ROUND: 4,
-  RUNNER_SHARE_PER_ROUND: 0.06,
+// How maps and their contents scale with the level number.
+export const LEVELS = {
+  BASE_WIDTH: 30,
+  BASE_HEIGHT: 22,
+  WIDTH_PER_LEVEL: 4,
+  HEIGHT_PER_LEVEL: 3,
+  MAX_WIDTH: 62,
+  MAX_HEIGHT: 46,
+  BASE_AREAS: 4,
+  AREAS_PER_LEVEL: 0.5,
+  MAX_AREAS: 9,
+  WINDOWS_PER_AREA: 2,
+  LIGHTS_PER_AREA: [1, 2],
+  ENEMIES_BASE: 10,
+  ENEMIES_PER_LEVEL: 6,
+  RUNNER_START_LEVEL: 3,
+  RUNNER_SHARE_PER_LEVEL: 0.1,
   RUNNER_MAX_SHARE: 0.5,
-  WINDOW_SAME_AREA_WEIGHT: 4,
+  SPAWN_INTERVAL: 2.2,
+  SPAWN_INTERVAL_PER_LEVEL: 0.12,
+  MIN_SPAWN_INTERVAL: 0.7,
+  MAX_ALIVE: 16,
+  MAX_ALIVE_PER_LEVEL: 1,
+  MAX_ALIVE_CAP: 30,
+  FIRST_SPAWN_DELAY: 6,
+  WINDOW_SAME_AREA_WEIGHT: 3,
   WINDOW_DISTANCE_SOFTENING: 300,
+  // Loot budget per level: base + per level, planks always cover the windows.
+  LOOT: {
+    plank: { base: 2, perLevel: 0, extraPerWindow: 1 },
+    scrap: { base: 4, perLevel: 1 },
+    cloth: { base: 2, perLevel: 0.5 },
+    ammo: { base: 3, perLevel: 1 },
+    medkit: { base: 1, perLevel: 0.2 },
+    parts: { base: 1, perLevel: 0.5 },
+    grenade: { base: 1, perLevel: 0.3 },
+    decoy: { base: 0, perLevel: 0.25 },
+  },
+  AMMO_BOX_FRACTION: 0.4, // of the current weapon's magazine size, per box
+};
+
+export const CAMERA = {
+  ZOOM: 1.6,
+  LOOKAHEAD: 0.28, // fraction of the aim offset the camera leads toward
+  MAX_LOOKAHEAD: 140,
+  SMOOTHING: 6, // higher = snappier
+  SHAKE_DECAY: 14,
+};
+
+export const LIGHTING = {
+  AMBIENT: 0.94, // darkness alpha over unlit areas
+  PLAYER_GLOW_RADIUS: 75,
+  FLASHLIGHT_ANGLE: Math.PI / 3,
+  FLASHLIGHT_LENGTH: 460,
+  FLASHLIGHT_RAYS: 64,
+  ROOM_LIGHT_RADIUS: 190,
+  ROOM_LIGHT_RAYS: 48,
+  RAY_STEP: 6,
+  LIGHT_RADIUS: 8, // hit circle of a lamp
+  LIGHT_HEALTH: 30,
+  LIGHTS_ON_CHANCE: 0.5,
+};
+
+export const OBJECTIVES = {
+  EXTRACT_RANGE: 60,
 };
 
 export const POINTS = {
@@ -102,6 +155,8 @@ export const POINTS = {
   KILL: 50,
   HEADSHOT_KILL: 100,
   MELEE_KILL: 130,
+  BOARD_WINDOW: 75,
+  EXTRACT_BONUS_PER_LEVEL: 500,
 };
 
 export const COMBAT = {
@@ -147,15 +202,6 @@ export const DECOY = {
   BOUNCE: 0.45,
 };
 
-export const ECONOMY = {
-  CRATE_PRICE: 950,
-  CRATE_SPIN_TIME: 2.5,
-  CRATE_SPIN_TICK: 0.09,
-  CRATE_OFFER_TIME: 8,
-  CRATE_SPECIAL_WEIGHT: 2,
-  WALL_BUY_REFILL_FACTOR: 0.5,
-};
-
 export const PATHFINDING = {
   RECALC_INTERVAL: 0.35,
 };
@@ -184,12 +230,19 @@ export const PARTICLES = {
   MUZZLE_LIFE: 0.08,
   EXPLOSION_SPEED: 320,
   EXPLOSION_LIFE: 0.55,
+  GLASS_COUNT: 10,
+  GLASS_SPEED: 140,
+  GLASS_LIFE: 0.4,
   DRAG: 4,
 };
 
-export const CAMERA = {
-  SHAKE_DECAY: 14,
+export const ITEMS = {
+  RADIUS: 9,
+  BOB_SPEED: 3,
+  BOB_HEIGHT: 2,
 };
+
+export const STORAGE_KEY = 'survival-arena.run';
 
 export const COLORS = {
   BACKGROUND: '#0b0d10',
@@ -197,21 +250,21 @@ export const COLORS = {
   WALL: '#4a4f5a',
   WALL_EDGE: '#5d6370',
   FLOOR_GRID: 'rgba(255,255,255,0.03)',
-  FLOOR_BY_AREA: ['#2c3140', '#2b3a30', '#3a2f2f', '#2e3648', '#3b3729', '#352d3c', '#2a3a3a'],
-  FLOOR_LOCKED_DIM: 'rgba(0,0,0,0.55)',
+  FLOOR_BY_AREA: ['#2c3140', '#2b3a30', '#3a2f2f', '#2e3648', '#3b3729', '#352d3c', '#2a3a3a', '#3a3030', '#2d3838'],
   WINDOW_FRAME: '#3a2a1c',
   WINDOW_PLANK: '#8a5a2b',
-  DOOR_CLOSED: '#b2562f',
-  DOOR_CLOSED_EDGE: '#e2803d',
-  DOOR_OPEN: 'rgba(226,128,61,0.25)',
+  WINDOW_BOARDED: '#c9955a',
+  ENTRANCE: '#2f6f8f',
+  ENTRANCE_EDGE: '#7fd0f0',
+  DOOR_CLOSED: '#6b4a32',
+  DOOR_CLOSED_EDGE: '#a8763f',
+  DOOR_OPEN: 'rgba(168,118,63,0.25)',
   DOOR_TEXT: '#ffe0c2',
-  WALL_BUY_ICON: '#e8e8e8',
-  WALL_BUY_OWNED: '#8fd18f',
-  WALL_BUY_TEXT: '#ffffff',
-  CRATE: '#7a5a2a',
-  CRATE_EDGE: '#c89a4a',
-  CRATE_SPIN: '#ffd25a',
-  CRATE_TEXT: '#fff0c8',
+  LIGHT_ON: '#ffe9a8',
+  LIGHT_OFF: '#6f6a55',
+  LIGHT_BROKEN: '#3b3830',
+  LIGHT_GLOW: 'rgba(255,233,168,0.9)',
+  FLASHLIGHT: 'rgba(255,250,230,1)',
   PLAYER: '#4fc3f7',
   PLAYER_OUTLINE: '#e3f7ff',
   PLAYER_AIM: '#ffffff',
@@ -235,22 +288,32 @@ export const COLORS = {
   HEADSHOT: '#ffe066',
   DEATH: '#3d5a2a',
   MUZZLE: '#fff3b0',
+  GLASS: '#d8f0ff',
   MELEE_ARC: 'rgba(255,255,255,0.35)',
+  ITEM_OUTLINE: '#ffffff',
   HUD_TEXT: '#ffffff',
   HUD_DIM: 'rgba(255,255,255,0.6)',
   HUD_PANEL: 'rgba(0,0,0,0.45)',
+  HUD_PANEL_EDGE: 'rgba(255,255,255,0.15)',
   HEALTH: '#4caf50',
   HEALTH_LOW: '#e53935',
   HEALTH_BACK: 'rgba(255,255,255,0.15)',
   POINTS: '#ffd54f',
+  OBJECTIVE_DONE: '#8fd18f',
+  OBJECTIVE_OPEN: '#ffffff',
   FLOATER_HIT: '#ffffff',
   FLOATER_KILL: '#ffd54f',
   FLOATER_HEADSHOT: '#ffe066',
   FLOATER_MELEE: '#ff8a65',
+  FLOATER_PICKUP: '#8fd18f',
   FLOATER_BAD: '#ef5350',
-  ROUND_ANNOUNCE: '#ff5252',
+  ANNOUNCE: '#ff5252',
+  SUCCESS: '#8fd18f',
   PROMPT_BACK: 'rgba(0,0,0,0.7)',
   OVERLAY: 'rgba(0,0,0,0.75)',
+  HUB_BACKGROUND: '#101318',
+  HUB_ACCENT: '#4fc3f7',
+  HUB_DISABLED: 'rgba(255,255,255,0.3)',
 };
 
 export const HUD = {
@@ -263,6 +326,16 @@ export const HUD = {
   FONT_SIZE_LARGE: 26,
   FONT_SIZE_TITLE: 64,
   PROMPT_Y_FRACTION: 0.72,
+  ANNOUNCE_TIME: 3,
   ANNOUNCE_FADE: 0.6,
-  WEAPON_PANEL_WIDTH: 260,
+  INVENTORY_ICON: 14,
+};
+
+export const HUB = {
+  COLUMN_GAP: 30,
+  LINE: 24,
+  TITLE_SIZE: 34,
+  HEADING_SIZE: 18,
+  TEXT_SIZE: 15,
+  PADDING: 24,
 };

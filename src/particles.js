@@ -47,6 +47,12 @@ export class ParticleSystem {
     });
   }
 
+  glass(x, y) {
+    this.emit(x, y, {
+      count: PARTICLES.GLASS_COUNT, speed: PARTICLES.GLASS_SPEED, life: PARTICLES.GLASS_LIFE, color: COLORS.GLASS, size: 2,
+    });
+  }
+
   explosion(x, y, count) {
     this.emit(x, y, {
       count, speed: PARTICLES.EXPLOSION_SPEED, life: PARTICLES.EXPLOSION_LIFE, color: COLORS.EXPLOSION_RING, size: 4,

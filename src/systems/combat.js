@@ -4,6 +4,7 @@ import { COMBAT, MELEE, ZOMBIE, COLORS } from '../config.js';
 import { Projectile } from '../entities/projectile.js';
 import { awardPoints, pointsForHit, pointsForKill } from './scoring.js';
 import { explode } from './explosions.js';
+import { damageLight } from './lighting.js';
 import { randSpread, segmentCircleT, pointLineDistance, angleDiff } from '../utils/math.js';
 
 const DEG = Math.PI / 180;
@@ -62,12 +63,22 @@ function sweepProjectile(game, pr) {
 
   let hitT = wallHitT(game.world, ax, ay, bx, by);
   let hitZombie = null;
+  let hitLight = null;
   for (const z of game.zombies) {
     if (z.dead) continue;
     const t = segmentCircleT(ax, ay, bx, by, z.x, z.y, z.radius + pr.radius);
     if (t !== null && t < hitT) {
       hitT = t;
       hitZombie = z;
+    }
+  }
+  for (const l of game.world.lights) {
+    if (l.broken) continue;
+    const t = segmentCircleT(ax, ay, bx, by, l.x, l.y, l.radius + pr.radius);
+    if (t !== null && t < hitT) {
+      hitT = t;
+      hitZombie = null;
+      hitLight = l;
     }
   }
   if (hitT > 1) return;
@@ -78,6 +89,10 @@ function sweepProjectile(game, pr) {
 
   if (pr.kind === 'explosive') {
     explode(game, hx, hy, pr.blastRadius, pr.damage);
+    return;
+  }
+  if (hitLight) {
+    damageLight(game, hitLight, pr.damage);
     return;
   }
   if (hitZombie) {

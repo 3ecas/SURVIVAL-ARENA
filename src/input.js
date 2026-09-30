@@ -20,7 +20,7 @@ export class Input {
       if (e.repeat) return;
       this.keysDown.add(e.code);
       this.keysPressed.add(e.code);
-      if (e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
+      if (e.code === 'Space' || e.code.startsWith('Arrow') || e.code === 'Tab') e.preventDefault();
     });
     window.addEventListener('keyup', (e) => this.keysDown.delete(e.code));
     window.addEventListener('blur', () => {
@@ -76,8 +76,13 @@ export class Input {
       grenadePressed: this.anyPressed(CONTROLS.GRENADE),
       decoyPressed: this.anyPressed(CONTROLS.DECOY),
       interactPressed: this.anyPressed(CONTROLS.INTERACT),
-      restartPressed: this.anyPressed(CONTROLS.RESTART) || this.buttonsPressed.has(CONTROLS.FIRE_BUTTON),
-      switchMapPressed: this.anyPressed(CONTROLS.SWITCH_MAP),
+      healPressed: this.anyPressed(CONTROLS.HEAL),
+      flashlightPressed: this.anyPressed(CONTROLS.FLASHLIGHT),
+      navUpPressed: this.anyPressed(CONTROLS.UP),
+      navDownPressed: this.anyPressed(CONTROLS.DOWN),
+      craftPressed: this.anyPressed(CONTROLS.CRAFT),
+      deployPressed: this.anyPressed(CONTROLS.DEPLOY),
+      newRunPressed: this.anyPressed(CONTROLS.NEW_RUN),
       weaponSlot,
       weaponScroll: Math.sign(this.wheel),
     };
@@ -93,8 +98,13 @@ export class Input {
       grenadePressed: false,
       decoyPressed: false,
       interactPressed: false,
-      restartPressed: false,
-      switchMapPressed: false,
+      healPressed: false,
+      flashlightPressed: false,
+      navUpPressed: false,
+      navDownPressed: false,
+      craftPressed: false,
+      deployPressed: false,
+      newRunPressed: false,
       weaponSlot: -1,
       weaponScroll: 0,
     };

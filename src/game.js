@@ -1,54 +1,61 @@
-// Game state and orchestration. Owns every entity list and calls the systems
-// in a fixed order each step. No drawing here.
+// One level in play. Owns every entity list and calls the systems in a fixed
+// order each step. No drawing here.
 
-import { PATHFINDING, TILE_SIZE, ZOMBIE, CAMERA, PLAYER, GRENADE, DECOY } from './config.js';
+import { PATHFINDING, TILE_SIZE, ZOMBIE, CAMERA, PLAYER, GRENADE, DECOY, LIGHTING, POINTS, HUD } from './config.js';
 import { World } from './world.js';
-import { MAPS, DEFAULT_MAP } from './data/maps.js';
 import { Player } from './entities/player.js';
 import { Grenade } from './entities/grenade.js';
 import { Decoy } from './entities/decoy.js';
 import { ParticleSystem } from './particles.js';
 import { FlowField } from './systems/pathfinding.js';
-import { RoundManager } from './systems/rounds.js';
-import { Crate, findInteractable, interact } from './systems/economy.js';
+import { SpawnDirector } from './systems/spawning.js';
+import { LightingSystem } from './systems/lighting.js';
+import { spawnItems, updateItems } from './systems/items.js';
+import { findInteractable, interact } from './systems/interaction.js';
+import { objectiveList } from './systems/objectives.js';
 import { fireShots, updateProjectiles, meleeAttack, zombieAttacksPlayer } from './systems/combat.js';
 import { explode, updateRings } from './systems/explosions.js';
-import { updateFloaters } from './systems/scoring.js';
+import { updateFloaters, awardPoints } from './systems/scoring.js';
 import { resolveCircleVsWorld, separateCircles, separatePair } from './systems/collision.js';
+import { mulberry32 } from './mapgen/rng.js';
 
 export class Game {
-  constructor(mapId = DEFAULT_MAP) {
-    this.mapId = MAPS[mapId] ? mapId : DEFAULT_MAP;
-    this.world = new World(MAPS[this.mapId]);
-    this.player = new Player(this.world.playerSpawn.x, this.world.playerSpawn.y);
+  // levelData comes from src/level.js, run from src/run.js.
+  constructor(levelData, run) {
+    this.levelData = levelData;
+    this.level = levelData.level;
+    this.world = new World(levelData.map);
+    this.player = new Player(this.world.playerSpawn.x, this.world.playerSpawn.y, run);
     this.zombies = [];
     this.projectiles = [];
     this.grenades = [];
     this.decoys = [];
+    this.items = [];
     this.floaters = [];
-    this.effects = { rings: [], meleeArc: 0 };
+    this.effects = { rings: [] };
     this.particles = new ParticleSystem();
     this.flow = new FlowField(this.world);
     this.flowTimer = 0;
     this.flowTargetKey = '';
-    this.rounds = new RoundManager(this);
-    this.crate = this.world.crate ? new Crate(this.world.crate) : null;
+    this.spawner = new SpawnDirector(this, levelData.enemies);
+    this.lighting = new LightingSystem(this);
     this.interactable = null;
     this.aim = { x: this.player.x + 1, y: this.player.y };
     this.shake = 0;
     this.time = 0;
-    this.state = 'playing'; // 'playing' | 'gameover'
-    this.lastFrame = null;
+    this.state = 'playing'; // 'playing' | 'dead' | 'extracted'
+    this.announce = { text: `Level ${this.level}`, sub: 'Board up every window, then get back to the entrance', timer: HUD.ANNOUNCE_TIME };
+    this.endTimer = 0;
+
+    const rng = mulberry32(levelData.mapSeed + 5);
+    for (const light of this.world.lights) light.on = rng() < LIGHTING.LIGHTS_ON_CHANCE;
+    spawnItems(this, levelData.items);
   }
 
   // ---- queries used by systems -------------------------------------------
 
-  get mapName() {
-    return MAPS[this.mapId].name || this.mapId;
-  }
-
-  aliveZombieCount() {
-    return this.zombies.length;
+  get objectives() {
+    return objectiveList(this);
   }
 
   activeDecoy() {
@@ -63,15 +70,16 @@ export class Game {
 
   // ---- events ------------------------------------------------------------
 
-  onDoorOpened() {
+  onWorldChanged() {
     this.flowTimer = 0;
   }
 
-  onRoundStart(round) {
-    this.player.refillForRound(round);
+  extract() {
+    if (this.state !== 'playing') return;
+    this.state = 'extracted';
+    awardPoints(this, POINTS.EXTRACT_BONUS_PER_LEVEL * this.level, this.player.x, this.player.y - this.player.radius * 2, { big: true });
+    this.announce = { text: 'Extracted', sub: `Level ${this.level} cleared`, timer: HUD.ANNOUNCE_TIME };
   }
-
-  onRoundEnd() {}
 
   setAim(worldPoint) {
     this.aim = worldPoint;
@@ -81,10 +89,11 @@ export class Game {
   // ---- main step ---------------------------------------------------------
 
   update(dt, frame) {
-    this.lastFrame = frame;
     this.time += dt;
     this.shake = Math.max(0, this.shake - CAMERA.SHAKE_DECAY * dt * Math.max(1, this.shake));
-    if (this.state === 'gameover') {
+    this.announce.timer = Math.max(0, this.announce.timer - dt);
+    if (this.state !== 'playing') {
+      this.endTimer += dt;
       this.particles.update(dt);
       updateFloaters(this, dt);
       updateRings(this, dt);
@@ -98,15 +107,18 @@ export class Game {
     this.resolveCollisions();
     updateProjectiles(this, dt);
     this.removeDeadZombies();
-    this.rounds.update(dt);
-    if (this.crate) this.crate.update(dt);
+    this.spawner.update(dt);
+    updateItems(this, dt);
     this.interactable = findInteractable(this);
     if (frame.interactPressed) interact(this, this.interactable);
     this.particles.update(dt);
     updateFloaters(this, dt);
     updateRings(this, dt);
 
-    if (this.player.dead) this.state = 'gameover';
+    if (this.player.dead) {
+      this.state = 'dead';
+      this.announce = { text: 'You died', sub: `Level ${this.level}`, timer: HUD.ANNOUNCE_TIME };
+    }
   }
 
   updatePlayer(dt, frame) {
@@ -118,6 +130,8 @@ export class Game {
     if (frame.weaponSlot >= 0) p.switchWeapon(frame.weaponSlot);
     if (frame.weaponScroll !== 0) p.cycleWeapon(frame.weaponScroll);
     if (frame.reloadPressed) p.weapon.startReload();
+    if (frame.flashlightPressed) p.flashlightOn = !p.flashlightOn;
+    if (frame.healPressed) p.useBandage();
 
     const shots = p.weapon.update(dt, frame.fireHeld, frame.firePressed);
     if (shots > 0) fireShots(this, p.weapon, shots);

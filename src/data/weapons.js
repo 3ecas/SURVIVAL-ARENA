@@ -1,7 +1,7 @@
 // Pure weapon data. fireMode: 'single' | 'auto' | 'burst' | 'explosive'.
 // damage is per bullet/pellet; fireRate is shots (or bursts) per second;
 // spread is in degrees; range (optional) caps bullet travel in pixels.
-// source: 'start' | 'wall' | 'crate'.
+// source: 'start' (you begin with it) | 'craft' (built in the hub, see recipes.js).
 
 export const WEAPONS = {
   pistol: {
@@ -11,10 +11,9 @@ export const WEAPONS = {
     damage: 35,
     fireRate: 5,
     magazine: 8,
-    reserve: 80,
+    reserve: 64,
     reloadTime: 1.2,
     spread: 2,
-    price: 0,
     source: 'start',
     color: '#cfd8dc',
   },
@@ -26,12 +25,11 @@ export const WEAPONS = {
     pellets: 8,
     fireRate: 1.2,
     magazine: 6,
-    reserve: 42,
+    reserve: 30,
     reloadTime: 2.4,
     spread: 11,
     range: 380,
-    price: 750,
-    source: 'wall',
+    source: 'craft',
     color: '#ffab91',
   },
   smg: {
@@ -41,11 +39,10 @@ export const WEAPONS = {
     damage: 28,
     fireRate: 12,
     magazine: 32,
-    reserve: 224,
+    reserve: 160,
     reloadTime: 1.6,
     spread: 5,
-    price: 1000,
-    source: 'wall',
+    source: 'craft',
     color: '#80cbc4',
   },
   burst: {
@@ -57,11 +54,10 @@ export const WEAPONS = {
     burstCount: 3,
     burstInterval: 0.06,
     magazine: 24,
-    reserve: 192,
+    reserve: 144,
     reloadTime: 1.8,
     spread: 1.5,
-    price: 1250,
-    source: 'wall',
+    source: 'craft',
     color: '#ce93d8',
   },
   ar: {
@@ -71,11 +67,10 @@ export const WEAPONS = {
     damage: 45,
     fireRate: 9,
     magazine: 30,
-    reserve: 240,
+    reserve: 180,
     reloadTime: 2.0,
     spread: 2.5,
-    price: 1500,
-    source: 'wall',
+    source: 'craft',
     color: '#a5d6a7',
   },
   dmr: {
@@ -85,11 +80,10 @@ export const WEAPONS = {
     damage: 120,
     fireRate: 3.5,
     magazine: 12,
-    reserve: 96,
+    reserve: 72,
     reloadTime: 2.0,
     spread: 0.8,
-    price: 1750,
-    source: 'wall',
+    source: 'craft',
     color: '#ffe082',
   },
   rocket: {
@@ -101,11 +95,10 @@ export const WEAPONS = {
     projectileSpeed: 620,
     fireRate: 1,
     magazine: 1,
-    reserve: 10,
+    reserve: 6,
     reloadTime: 2.8,
     spread: 0,
-    price: 0,
-    source: 'crate',
+    source: 'craft',
     color: '#ff8a65',
   },
   blaster: {
@@ -117,11 +110,10 @@ export const WEAPONS = {
     projectileSpeed: 820,
     fireRate: 3,
     magazine: 20,
-    reserve: 120,
+    reserve: 80,
     reloadTime: 2.2,
     spread: 1,
-    price: 0,
-    source: 'crate',
+    source: 'craft',
     color: '#4dd0e1',
   },
   lmg: {
@@ -131,11 +123,10 @@ export const WEAPONS = {
     damage: 55,
     fireRate: 10,
     magazine: 120,
-    reserve: 480,
+    reserve: 360,
     reloadTime: 4.0,
     spread: 4,
-    price: 0,
-    source: 'crate',
+    source: 'craft',
     color: '#ffcc80',
   },
 };

@@ -3,12 +3,19 @@
 
 import { EXPLOSION } from '../config.js';
 import { damageZombie } from './combat.js';
+import { damageLight } from './lighting.js';
 
 export function explode(game, x, y, radius, damage, { source = 'explosive' } = {}) {
   for (const z of game.zombies) {
     if (z.dead) continue;
     const f = falloff(x, y, z.x, z.y, radius + z.radius);
     if (f > 0) damageZombie(game, z, damage * f, { source, angle: Math.atan2(z.y - y, z.x - x) });
+  }
+
+  for (const l of game.world.lights) {
+    if (l.broken) continue;
+    const f = falloff(x, y, l.x, l.y, radius + l.radius);
+    if (f > 0) damageLight(game, l, damage * f);
   }
 
   const p = game.player;
