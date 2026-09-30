@@ -157,7 +157,7 @@ export const CAMERA = {
 export const LIGHTING = {
   AMBIENT: 0.93, // darkness alpha over unlit areas
   PLAYER_GLOW_RADIUS: 80,
-  FLASHLIGHT_ANGLE: Math.PI / 3,
+  FLASHLIGHT_ANGLE: Math.PI * 0.55, // ~100 degrees
   FLASHLIGHT_LENGTH: 460,
   FLASHLIGHT_RAYS: 140,
   ROOM_LIGHT_RADIUS: 210,
