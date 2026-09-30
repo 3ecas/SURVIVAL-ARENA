@@ -21,11 +21,12 @@ Pages from `main`.
 
 ## How a run works
 
-1. **Hub.** Three sections: the next map (rounds, size, expected enemies,
-   resources on the floor), gear & inventory (health, XP bar, attribute
-   points, loadout, resources) and the armory (unlock guns with score and
-   weapon parts, craft bandages, grenades and decoys from resources).
-   Tab switches section, W/S moves, Enter selects, Space deploys.
+1. **Hub.** Three panels of cards: the next map (a map preview, rounds,
+   a per-round enemy chart, resources on the floor), gear & inventory
+   (health, XP bar, attribute cards, loadout slots, unlocked guns, items)
+   and the armory (unlock guns with score and weapon parts, craft bandages,
+   grenades and decoys). WASD moves across the cards, Tab switches panel,
+   Enter selects, Space deploys.
 2. **Level.** You start at the entrance of a dark building with a flashlight
    and whatever you equipped. Zombies climb in through the windows of the
    rooms you have opened up, round after round. Kill every zombie of every
@@ -51,7 +52,7 @@ Pages from `main`.
 | Bandage             | H                          |
 | Flashlight          | F                          |
 | Switch weapon       | 1 / 2 or mouse wheel       |
-| Hub                 | Tab/A/D section, W/S move, Enter select, Q active weapon, Space deploy, N new run |
+| Hub                 | WASD move between cards, Tab switch panel, Enter select, Q active weapon, Space deploy, N new run |
 
 ## Tools
 

@@ -6,6 +6,7 @@
 export const WEAPONS = {
   pistol: {
     id: 'pistol',
+    icon: 'pistol',
     name: 'M1911 Pistol',
     fireMode: 'single',
     damage: 35,
@@ -19,6 +20,7 @@ export const WEAPONS = {
   },
   shotgun: {
     id: 'shotgun',
+    icon: 'shotgun',
     name: 'Pump Shotgun',
     fireMode: 'single',
     damage: 24,
@@ -34,6 +36,7 @@ export const WEAPONS = {
   },
   smg: {
     id: 'smg',
+    icon: 'smg',
     name: 'Vector SMG',
     fireMode: 'auto',
     damage: 28,
@@ -47,6 +50,7 @@ export const WEAPONS = {
   },
   burst: {
     id: 'burst',
+    icon: 'rifle',
     name: 'Trident Burst',
     fireMode: 'burst',
     damage: 50,
@@ -62,6 +66,7 @@ export const WEAPONS = {
   },
   ar: {
     id: 'ar',
+    icon: 'rifle',
     name: 'Commando AR',
     fireMode: 'auto',
     damage: 45,
@@ -75,6 +80,7 @@ export const WEAPONS = {
   },
   dmr: {
     id: 'dmr',
+    icon: 'rifle',
     name: 'Marksman DMR',
     fireMode: 'single',
     damage: 120,
@@ -88,6 +94,7 @@ export const WEAPONS = {
   },
   rocket: {
     id: 'rocket',
+    icon: 'launcher',
     name: 'Thunder Rocket',
     fireMode: 'explosive',
     damage: 900,
@@ -103,6 +110,7 @@ export const WEAPONS = {
   },
   blaster: {
     id: 'blaster',
+    icon: 'energy',
     name: 'Plasma Blaster',
     fireMode: 'explosive',
     damage: 190,
@@ -118,6 +126,7 @@ export const WEAPONS = {
   },
   lmg: {
     id: 'lmg',
+    icon: 'lmg',
     name: 'Hammer LMG',
     fireMode: 'auto',
     damage: 55,

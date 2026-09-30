@@ -3,6 +3,7 @@
 
 import { COLORS, HUD, MELEE, LEVELS } from '../config.js';
 import { ITEM_TYPES, INVENTORY_TYPES } from '../data/items.js';
+import { drawIcon, drawFireModeIcon } from './icons.js';
 
 export function drawHud(ctx, game, width, height) {
   ctx.save();
@@ -98,7 +99,7 @@ function drawWeaponPanel(ctx, game, width, height) {
   const nameY = y - HUD.FONT_SIZE_LARGE - HUD.FONT_SIZE;
   ctx.fillText(w.def.name, x, nameY);
   const nameW = ctx.measureText(w.def.name).width;
-  drawFireModeIcon(ctx, w.def.fireMode, x - nameW - 22, nameY);
+  drawFireModeIcon(ctx, w.def.fireMode, x - nameW - 22, nameY, COLORS.HUD_TEXT);
 
   ctx.fillStyle = COLORS.HUD_DIM;
   ctx.font = `${HUD.FONT_SIZE - 3}px ${HUD.FONT}`;
@@ -131,46 +132,12 @@ function drawInventory(ctx, game, width, height) {
     ctx.fillStyle = COLORS.HUD_TEXT;
     ctx.fillText(label, cx, y);
     cx -= ctx.measureText(label).width + 6;
-    ctx.fillStyle = def.color;
-    ctx.fillRect(cx - HUD.INVENTORY_ICON, y - HUD.INVENTORY_ICON / 2, HUD.INVENTORY_ICON, HUD.INVENTORY_ICON);
-    cx -= HUD.INVENTORY_ICON + 16;
+    drawIcon(ctx, type, cx - HUD.INVENTORY_ICON / 2 - 2, y, HUD.INVENTORY_ICON + 4, def.color, COLORS.BACKGROUND);
+    cx -= HUD.INVENTORY_ICON + 18;
   }
   ctx.fillStyle = COLORS.HUD_DIM;
   ctx.font = `${HUD.FONT_SIZE - 5}px ${HUD.FONT}`;
   ctx.fillText('scrap · cloth · parts', x, y - HUD.FONT_SIZE);
-}
-
-function drawFireModeIcon(ctx, mode, cx, cy) {
-  ctx.fillStyle = COLORS.HUD_TEXT;
-  ctx.strokeStyle = COLORS.HUD_TEXT;
-  ctx.lineWidth = 1.5;
-  const dot = (dx) => {
-    ctx.beginPath();
-    ctx.arc(cx + dx, cy, 2.2, 0, Math.PI * 2);
-    ctx.fill();
-  };
-  if (mode === 'single') {
-    dot(0);
-  } else if (mode === 'burst') {
-    dot(-6); dot(0); dot(6);
-  } else if (mode === 'auto') {
-    dot(-6); dot(0); dot(6);
-    ctx.beginPath();
-    ctx.moveTo(cx - 10, cy + 6);
-    ctx.lineTo(cx + 10, cy + 6);
-    ctx.stroke();
-  } else if (mode === 'explosive') {
-    ctx.beginPath();
-    ctx.arc(cx, cy, 5, 0, Math.PI * 2);
-    ctx.stroke();
-    for (let i = 0; i < 4; i++) {
-      const a = (Math.PI / 2) * i + Math.PI / 4;
-      ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(a) * 6, cy + Math.sin(a) * 6);
-      ctx.lineTo(cx + Math.cos(a) * 9, cy + Math.sin(a) * 9);
-      ctx.stroke();
-    }
-  }
 }
 
 function drawGrenadeIcon(ctx, cx, cy) {
