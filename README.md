@@ -25,8 +25,8 @@ Pages from `main`.
    a per-round enemy chart, resources on the floor), gear & inventory
    (health, XP bar, attribute cards, loadout slots, unlocked guns, items)
    and the armory (unlock guns with score and weapon parts, craft bandages,
-   grenades and decoys). WASD moves across the cards, Tab switches panel,
-   Enter selects, Space deploys.
+   grenades and decoys). Click a card to select it, double-click to use it;
+   the Start Level button deploys, New Run resets on a double-click.
 2. **Level.** You start at the entrance of a dark building with a flashlight
    and whatever you equipped. Zombies climb in through the windows of the
    rooms you have opened up, round after round. Kill every zombie of every
@@ -52,7 +52,7 @@ Pages from `main`.
 | Bandage             | H                          |
 | Flashlight          | F                          |
 | Switch weapon       | 1 / 2 or mouse wheel       |
-| Hub                 | WASD move between cards, Tab switch panel, Enter select, Q active weapon, Space deploy, N new run |
+| Hub                 | Mouse: click selects a card, double-click uses it; Start Level and New Run buttons (New Run needs a double-click). Keyboard also works: WASD, Enter, Tab, Space, N |
 
 ## Tools
 

@@ -19,6 +19,44 @@ export class Hub {
     this.cursor = { gear: { row: 0, col: 0 }, armory: { row: 0, col: 0 } };
     this.message = '';
     this.briefing = buildLevel(run.level, run.seed);
+    // Filled by the renderer every frame: clickable rectangles in the hub's
+    // virtual space, and how that space maps onto the screen.
+    this.hitboxes = [];
+    this.layout = null;
+    this.hover = null;
+  }
+
+  // Screen point -> hub virtual space, or null before the first render.
+  toVirtual(p) {
+    if (!this.layout) return null;
+    const { scale, ox, oy } = this.layout;
+    return { x: (p.x - ox) / scale, y: (p.y - oy) / scale };
+  }
+
+  boxAt(p) {
+    const v = this.toVirtual(p);
+    if (!v) return null;
+    for (let i = this.hitboxes.length - 1; i >= 0; i--) {
+      const b = this.hitboxes[i];
+      if (v.x >= b.x && v.y >= b.y && v.x <= b.x + b.w && v.y <= b.y + b.h) return b;
+    }
+    return null;
+  }
+
+  // Moves the cursor (and panel focus) onto the card with this key.
+  selectKey(key) {
+    for (const panel of PANELS) {
+      const rows = this.rows(panel);
+      for (let r = 0; r < rows.length; r++) {
+        const c = rows[r].findIndex((it) => it.key === key);
+        if (c >= 0) {
+          this.focus = panel;
+          this.cursor[panel] = { row: r, col: c };
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   // Card groups per panel. Each group is a grid with `cols` columns; every
@@ -88,6 +126,22 @@ export class Hub {
 
   // Returns 'deploy' | 'newRun' | null.
   handle(frame) {
+    // Mouse: hover highlights, click selects, double click uses; buttons act.
+    const box = this.boxAt(frame.aimScreen);
+    this.hover = box ? box.key : null;
+    if (frame.clickPressed && box) {
+      if (box.kind === 'card') {
+        this.selectKey(box.key);
+        if (frame.doubleClickPressed) this.activate(this.selected());
+      } else if (box.key === 'deploy') {
+        return 'deploy';
+      } else if (box.key === 'newRun') {
+        if (frame.doubleClickPressed) return 'newRun';
+        this.message = 'Double-click New run to confirm: this resets the run';
+      }
+    }
+
+    // Keyboard fallback.
     if (frame.nextPanelPressed) this.focus = PANELS[(PANELS.indexOf(this.focus) + 1) % PANELS.length];
     if (frame.navUpPressed) this.move(-1, 0);
     if (frame.navDownPressed) this.move(1, 0);

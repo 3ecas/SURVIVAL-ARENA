@@ -55,14 +55,18 @@ function frame(now) {
   let intent = input.getFrame();
 
   if (mode === 'hub') {
+    canvas.style.cursor = hub.hover ? 'pointer' : 'default';
     const action = hub.handle(intent);
-    if (action === 'deploy') deploy();
-    else if (action === 'newRun') startNewRun();
+    if (action === 'deploy') {
+      deploy();
+      intent = Input.withoutEdges(intent);
+    } else if (action === 'newRun') startNewRun();
     else saveState(run, meta);
     if (mode === 'hub') renderer.renderHub(hub);
   }
 
   if (mode === 'level') {
+    canvas.style.cursor = 'crosshair';
     accumulator += dt;
     const wantsOut = game.endTimer > 1 && (intent.craftPressed || intent.deployPressed || intent.firePressed);
     if (game.state !== 'playing' && (wantsOut || game.autoReturnDue)) {

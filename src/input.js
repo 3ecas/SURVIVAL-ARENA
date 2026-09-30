@@ -12,6 +12,9 @@ export class Input {
     this.buttonsPressed = new Set();
     this.mouse = { x: canvas.width / 2, y: canvas.height / 2 };
     this.wheel = 0;
+    this.click = false;
+    this.doubleClick = false;
+    this.lastClick = { time: -Infinity, x: 0, y: 0 };
     this.bind();
   }
 
@@ -34,6 +37,14 @@ export class Input {
     this.canvas.addEventListener('mousedown', (e) => {
       this.buttonsDown.add(e.button);
       this.buttonsPressed.add(e.button);
+      if (e.button === CONTROLS.FIRE_BUTTON) {
+        const now = performance.now();
+        const near = Math.hypot(e.clientX - this.lastClick.x, e.clientY - this.lastClick.y) <= CONTROLS.DOUBLE_CLICK_DISTANCE;
+        const isDouble = near && now - this.lastClick.time <= CONTROLS.DOUBLE_CLICK_TIME;
+        this.click = true;
+        this.doubleClick = this.doubleClick || isDouble; // sticky until the frame ends
+        this.lastClick = { time: isDouble ? -Infinity : now, x: e.clientX, y: e.clientY };
+      }
       e.preventDefault();
     });
     window.addEventListener('mouseup', (e) => this.buttonsDown.delete(e.button));
@@ -69,6 +80,8 @@ export class Input {
       moveX,
       moveY,
       aimScreen: { x: this.mouse.x, y: this.mouse.y },
+      clickPressed: this.click,
+      doubleClickPressed: this.doubleClick,
       fireHeld: this.buttonsDown.has(CONTROLS.FIRE_BUTTON),
       firePressed: this.buttonsPressed.has(CONTROLS.FIRE_BUTTON),
       meleePressed: this.buttonsPressed.has(CONTROLS.MELEE_BUTTON) || this.anyPressed(CONTROLS.MELEE),
@@ -95,6 +108,8 @@ export class Input {
   static withoutEdges(frame) {
     return {
       ...frame,
+      clickPressed: false,
+      doubleClickPressed: false,
       firePressed: false,
       meleePressed: false,
       reloadPressed: false,
@@ -120,5 +135,7 @@ export class Input {
     this.keysPressed.clear();
     this.buttonsPressed.clear();
     this.wheel = 0;
+    this.click = false;
+    this.doubleClick = false;
   }
 }

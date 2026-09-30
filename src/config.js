@@ -28,6 +28,8 @@ export const CONTROLS = {
   NEW_RUN: ['KeyN'],
   FIRE_BUTTON: 0,
   MELEE_BUTTON: 2,
+  DOUBLE_CLICK_TIME: 350, // ms
+  DOUBLE_CLICK_DISTANCE: 8, // px
 };
 
 export const PLAYER = {
@@ -337,6 +339,10 @@ export const COLORS = {
   HUB_CARD_SELECTED: 'rgba(79,195,247,0.16)',
   HUB_CARD_DIM: 'rgba(255,255,255,0.025)',
   HUB_KEYCAP: 'rgba(255,255,255,0.12)',
+  HUB_CARD_HOVER: 'rgba(255,255,255,0.10)',
+  HUB_BUTTON: '#4fc3f7',
+  HUB_BUTTON_TEXT: '#0b0d10',
+  HUB_BUTTON_SECONDARY: 'rgba(255,255,255,0.10)',
   LOCKED: 'rgba(255,255,255,0.35)',
   PIP_ON: '#4fc3f7',
   PIP_OFF: 'rgba(255,255,255,0.15)',

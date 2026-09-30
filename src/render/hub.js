@@ -13,20 +13,28 @@ import { drawIcon, drawFireModeIcon } from './icons.js';
 const FONT = HUD.FONT;
 const GAP = HUB.CARD_GAP;
 
+// The hub being drawn; card() registers clickable rectangles on it.
+let current = null;
+
 export function drawHub(ctx, hub, width, height) {
   const VW = HUB.VIRTUAL_WIDTH;
   const VH = HUB.VIRTUAL_HEIGHT;
   const scale = Math.min(width / VW, height / VH);
+  const ox = (width - VW * scale) / 2;
+  const oy = (height - VH * scale) / 2;
+  current = hub;
+  hub.hitboxes = [];
+  hub.layout = { scale, ox, oy };
   ctx.save();
   ctx.fillStyle = COLORS.HUB_BACKGROUND;
   ctx.fillRect(0, 0, width, height);
-  ctx.translate((width - VW * scale) / 2, (height - VH * scale) / 2);
+  ctx.translate(ox, oy);
   ctx.scale(scale, scale);
   ctx.textBaseline = 'middle';
 
   const pad = HUB.PADDING;
   const headerH = 70;
-  const footerH = 40;
+  const footerH = 58;
   const colW = (VW - pad * 2 - HUB.COLUMN_GAP * 2) / 3;
   const top = pad + headerH;
   const panelH = VH - top - pad - footerH;
@@ -35,9 +43,9 @@ export function drawHub(ctx, hub, width, height) {
   drawHeader(ctx, hub, pad, VW);
   drawPanel(ctx, cols[0], top, colW, panelH, 'NEXT MAP', `LEVEL ${hub.run.level}`, false);
   drawNextMap(ctx, hub.briefing, inner(cols[0], top, colW));
-  drawPanel(ctx, cols[1], top, colW, panelH, 'GEAR & INVENTORY', 'TAB to switch', hub.focus === 'gear');
+  drawPanel(ctx, cols[1], top, colW, panelH, 'GEAR & INVENTORY', 'click: select · double-click: use', hub.focus === 'gear');
   drawGear(ctx, hub, inner(cols[1], top, colW));
-  drawPanel(ctx, cols[2], top, colW, panelH, 'ARMORY', 'unlock & craft', hub.focus === 'armory');
+  drawPanel(ctx, cols[2], top, colW, panelH, 'ARMORY', 'double-click: unlock / craft', hub.focus === 'armory');
   drawArmory(ctx, hub, inner(cols[2], top, colW));
   drawFooter(ctx, hub, pad, VW, VH);
   ctx.restore();
@@ -61,11 +69,15 @@ function text(ctx, str, x, y, { size = HUB.TEXT_SIZE, color = COLORS.HUD_TEXT, b
   ctx.fillText(str, x, y);
 }
 
-function card(ctx, x, y, w, h, { selected = false, dim = false, dashed = false } = {}) {
-  ctx.fillStyle = selected ? COLORS.HUB_CARD_SELECTED : dim ? COLORS.HUB_CARD_DIM : COLORS.HUB_CARD;
+// A card. With `key` it is clickable: registered as a hitbox, highlighted
+// on hover.
+function card(ctx, x, y, w, h, { selected = false, dim = false, dashed = false, key = null } = {}) {
+  const hovered = key && current && current.hover === key;
+  if (key) current.hitboxes.push({ key, kind: 'card', x, y, w, h });
+  ctx.fillStyle = selected ? COLORS.HUB_CARD_SELECTED : hovered ? COLORS.HUB_CARD_HOVER : dim ? COLORS.HUB_CARD_DIM : COLORS.HUB_CARD;
   roundRect(ctx, x, y, w, h, HUB.CARD_RADIUS);
   ctx.fill();
-  ctx.strokeStyle = selected ? COLORS.HUB_ACCENT : COLORS.HUB_CARD_EDGE;
+  ctx.strokeStyle = selected ? COLORS.HUB_ACCENT : hovered ? COLORS.HUD_DIM : COLORS.HUB_CARD_EDGE;
   ctx.lineWidth = selected ? 2 : 1;
   if (dashed) ctx.setLineDash([4, 4]);
   roundRect(ctx, x, y, w, h, HUB.CARD_RADIUS);
@@ -162,22 +174,35 @@ function statusLine(meta) {
   return `Level ${r.level} cleared: ${r.kills} kills, ${r.xpEarned} XP${r.levelsGained ? `, +${r.levelsGained} player level${r.levelsGained > 1 ? 's' : ''}` : ''}. Best score ${meta.bestScore}.`;
 }
 
+function button(ctx, key, label, x, y, w, h, primary, sub = '') {
+  const hovered = current.hover === key;
+  current.hitboxes.push({ key, kind: 'button', x, y, w, h });
+  roundRect(ctx, x, y, w, h, 8);
+  ctx.fillStyle = primary ? COLORS.HUB_BUTTON : hovered ? COLORS.HUB_CARD_HOVER : COLORS.HUB_BUTTON_SECONDARY;
+  ctx.fill();
+  if (hovered) {
+    ctx.strokeStyle = primary ? COLORS.HUD_TEXT : COLORS.HUB_ACCENT;
+    ctx.lineWidth = 2;
+    roundRect(ctx, x, y, w, h, 8);
+    ctx.stroke();
+  }
+  const color = primary ? COLORS.HUB_BUTTON_TEXT : COLORS.HUD_TEXT;
+  if (sub) {
+    text(ctx, label, x + w / 2, y + h / 2 - 6, { size: 15, bold: true, align: 'center', color });
+    text(ctx, sub, x + w / 2, y + h / 2 + 10, { size: HUB.SMALL_SIZE - 1, align: 'center', color: COLORS.HUD_DIM });
+  } else {
+    text(ctx, label, x + w / 2, y + h / 2 + 1, { size: 15, bold: true, align: 'center', color });
+  }
+}
+
 function drawFooter(ctx, hub, pad, VW, VH) {
-  const y = VH - pad - 12;
-  let x = pad;
-  const hint = (key, label) => {
-    x += keycap(ctx, key, x, y) + 6;
-    text(ctx, label, x, y, { size: HUB.SMALL_SIZE, color: COLORS.HUD_DIM });
-    ctx.font = `${HUB.SMALL_SIZE}px ${FONT}`;
-    x += ctx.measureText(label).width + 18;
-  };
-  hint('SPACE', 'deploy');
-  hint('W A S D', 'move');
-  hint('ENTER', 'select');
-  hint('TAB', 'switch panel');
-  hint('Q', 'active weapon');
-  hint('N', 'new run');
-  if (hub.message) text(ctx, hub.message, VW - pad, y, { size: HUB.TEXT_SIZE, color: COLORS.SUCCESS, align: 'right' });
+  const y = VH - pad - 14;
+  text(ctx, 'Click a card to select it. Double-click to use it: spend a point, equip, activate, unlock or craft.', pad, y - 8, { size: HUB.SMALL_SIZE, color: COLORS.HUD_DIM });
+  if (hub.message) text(ctx, hub.message, pad, y + 10, { size: HUB.TEXT_SIZE, color: COLORS.SUCCESS });
+  const bw = 200;
+  const bh = 40;
+  button(ctx, 'deploy', `START LEVEL ${hub.run.level}`, VW - pad - bw, y - bh / 2, bw, bh, true);
+  button(ctx, 'newRun', 'NEW RUN', VW - pad - bw - GAP - 130, y - bh / 2, 130, bh, false, 'double-click to reset');
 }
 
 function drawPanel(ctx, x, y, w, h, title, subtitle, focused) {
@@ -345,7 +370,7 @@ function drawGear(ctx, hub, r) {
     const cy = y + Math.floor(i / 2) * (62 + GAP);
     const v = run.attributes[a.id] || 0;
     const blocked = attributeBlocker(run, a.id);
-    card(ctx, cx, cy, aw, 62, { selected: hub.isSelected(`attr:${a.id}`), dim: !!blocked && !v });
+    card(ctx, cx, cy, aw, 62, { selected: hub.isSelected(`attr:${a.id}`), dim: !!blocked && !v, key: `attr:${a.id}` });
     drawIcon(ctx, a.icon, cx + 20, cy + 31, 24, blocked ? COLORS.HUD_DIM : COLORS.HUB_ACCENT);
     text(ctx, a.name, cx + 38, cy + 14, { bold: true });
     text(ctx, `${v} / ${MAX_ATTRIBUTE}`, cx + aw - 8, cy + 14, { size: HUB.SMALL_SIZE, color: COLORS.HUD_DIM, align: 'right' });
@@ -359,13 +384,13 @@ function drawGear(ctx, hub, r) {
   y += 2 * 62 + GAP + GAP;
 
   // Loadout slots
-  y = heading(ctx, 'LOADOUT', r.x, y + 8, r.w, 'ENTER: activate / equip');
+  y = heading(ctx, 'LOADOUT', r.x, y + 8, r.w, 'double-click: activate / equip');
   const sw = (r.w - GAP) / 2;
   for (let slot = 0; slot < PLAYER.MAX_WEAPONS; slot++) {
     const cx = r.x + slot * (sw + GAP);
     const entry = run.weapons[slot];
     const active = entry && slot === run.weaponIndex;
-    card(ctx, cx, y, sw, 62, { selected: hub.isSelected(`slot:${slot}`), dashed: !entry, dim: !entry });
+    card(ctx, cx, y, sw, 62, { selected: hub.isSelected(`slot:${slot}`), dashed: !entry, dim: !entry, key: `slot:${slot}` });
     if (active) {
       ctx.fillStyle = COLORS.HUB_ACCENT;
       roundRect(ctx, cx, y, 4, 62, 2);
@@ -381,7 +406,7 @@ function drawGear(ctx, hub, r) {
     text(ctx, fitText(ctx, def.name, sw - 96, HUB.TEXT_SIZE, true), cx + 40, y + 14, { bold: true, color: def.color });
     drawFireModeIcon(ctx, def.fireMode, cx + 50, y + 34, COLORS.HUD_DIM);
     text(ctx, `${def.magazine} + ${def.reserve}`, cx + 66, y + 34, { size: HUB.SMALL_SIZE, color: COLORS.HUD_DIM });
-    text(ctx, active ? 'ACTIVE' : 'ENTER to activate', cx + 40, y + 51, { size: HUB.SMALL_SIZE - 1, color: active ? COLORS.HUB_ACCENT : COLORS.HUD_DIM, bold: active });
+    text(ctx, active ? 'ACTIVE' : 'double-click to activate', cx + 40, y + 51, { size: HUB.SMALL_SIZE - 1, color: active ? COLORS.HUB_ACCENT : COLORS.HUD_DIM, bold: active });
   }
   y += 62 + GAP;
 
@@ -392,14 +417,14 @@ function drawGear(ctx, hub, r) {
     const cx = r.x + (i % 3) * (gw + GAP);
     const cy = y + Math.floor(i / 3) * (44 + GAP);
     const slot = run.weapons.findIndex((w) => w.id === id);
-    card(ctx, cx, cy, gw, 44, { selected: hub.isSelected(`gun:${id}`), dim: slot < 0 });
+    card(ctx, cx, cy, gw, 44, { selected: hub.isSelected(`gun:${id}`), dim: slot < 0, key: `gun:${id}` });
     drawIcon(ctx, def.icon, cx + 20, cy + 22, 30, slot >= 0 ? def.color : COLORS.HUD_DIM, COLORS.HUB_BACKGROUND);
     text(ctx, def.name.split(' ')[0], cx + 40, cy + 15, { size: HUB.SMALL_SIZE + 1, bold: true, color: slot >= 0 ? COLORS.HUD_TEXT : COLORS.HUD_DIM });
     if (slot >= 0) {
       drawIcon(ctx, 'check', cx + 44, cy + 32, 12, COLORS.SUCCESS);
       text(ctx, `slot ${slot + 1}`, cx + 54, cy + 32, { size: HUB.SMALL_SIZE - 1, color: COLORS.SUCCESS });
     } else {
-      text(ctx, 'ENTER equips', cx + 40, cy + 32, { size: HUB.SMALL_SIZE - 1, color: COLORS.HUD_DIM });
+      text(ctx, 'double-click to equip', cx + 40, cy + 32, { size: HUB.SMALL_SIZE - 1, color: COLORS.HUD_DIM });
     }
   });
   y += Math.ceil(run.unlocked.length / 3) * (44 + GAP);
@@ -443,7 +468,7 @@ function drawArmory(ctx, hub, r) {
     const blocker = unlockBlocker(run, def.id);
     const cx = r.x + (i % 3) * (cw + GAP);
     const cy = y + Math.floor(i / 3) * (ch + GAP);
-    card(ctx, cx, cy, cw, ch, { selected: hub.isSelected(item.key), dim: !!blocker });
+    card(ctx, cx, cy, cw, ch, { selected: hub.isSelected(item.key), dim: !!blocker, key: item.key });
     drawIcon(ctx, def.icon, cx + cw / 2, cy + 22, 40, blocker ? COLORS.LOCKED : def.color, COLORS.HUB_BACKGROUND);
     if (blocker) drawIcon(ctx, 'lock', cx + cw - 12, cy + 12, 14, COLORS.HUD_DIM);
     text(ctx, def.name, cx + cw / 2, cy + 46, { size: HUB.SMALL_SIZE + 1, bold: true, align: 'center', color: blocker ? COLORS.LOCKED : COLORS.HUD_TEXT });
@@ -464,7 +489,7 @@ function drawArmory(ctx, hub, r) {
     const cx = r.x + (i % 3) * (cw + GAP);
     const cy = y + Math.floor(i / 3) * (ch + GAP);
     const color = rec.icon === 'bandage' ? COLORS.HEALTH_LOW : rec.icon === 'grenade' ? COLORS.ZOMBIE_WALKER : COLORS.DECOY;
-    card(ctx, cx, cy, cw, ch, { selected: hub.isSelected(item.key), dim: !!blocker });
+    card(ctx, cx, cy, cw, ch, { selected: hub.isSelected(item.key), dim: !!blocker, key: item.key });
     drawIcon(ctx, rec.icon, cx + cw / 2, cy + 22, 32, blocker ? COLORS.LOCKED : color, COLORS.HUB_BACKGROUND);
     text(ctx, rec.name, cx + cw / 2, cy + 46, { size: HUB.SMALL_SIZE + 1, bold: true, align: 'center', color: blocker ? COLORS.LOCKED : COLORS.HUD_TEXT });
     const entries = Object.entries(rec.cost);
