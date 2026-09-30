@@ -2,8 +2,9 @@
 // It decides *when* a shot happens; combat.js decides what a shot does.
 
 export class Weapon {
-  constructor(def) {
+  constructor(def, reloadMultiplier = 1) {
     this.def = def;
+    this.reloadMultiplier = reloadMultiplier;
     this.mag = def.magazine;
     this.reserve = def.reserve;
     this.cooldown = 0;
@@ -30,7 +31,7 @@ export class Weapon {
   startReload() {
     if (this.reloading || this.mag === this.def.magazine || this.reserve <= 0) return false;
     this.reloading = true;
-    this.reloadTimer = this.def.reloadTime;
+    this.reloadTimer = this.def.reloadTime * this.reloadMultiplier;
     this.burstLeft = 0;
     return true;
   }

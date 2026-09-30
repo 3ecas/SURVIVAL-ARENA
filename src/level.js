@@ -1,5 +1,5 @@
 // Builds everything a level needs from (level number, run seed): the map,
-// the enemy budget and the loot list. Deterministic, so the hub can show a
+// the round plan and the loot list. Deterministic, so the hub can show a
 // briefing for exactly the map the player will get.
 
 import { LEVELS, ZOMBIE } from './config.js';
@@ -25,17 +25,27 @@ export function levelParams(level, runSeed) {
   };
 }
 
-export function enemyBudget(level) {
+export function roundPlan(level) {
   const n = level - 1;
-  const total = LEVELS.ENEMIES_BASE + LEVELS.ENEMIES_PER_LEVEL * n;
+  const count = Math.min(LEVELS.MAX_ROUNDS, Math.floor(LEVELS.BASE_ROUNDS + LEVELS.ROUNDS_PER_LEVEL * n));
   const runnerShare = level < LEVELS.RUNNER_START_LEVEL ? 0 : Math.min(LEVELS.RUNNER_MAX_SHARE, (level - LEVELS.RUNNER_START_LEVEL + 1) * LEVELS.RUNNER_SHARE_PER_LEVEL);
-  const runners = Math.round(total * runnerShare);
+  const rounds = [];
+  for (let r = 1; r <= count; r++) {
+    const total = Math.round(LEVELS.ROUND_BASE_COUNT + LEVELS.ROUND_COUNT_PER_ROUND * (r - 1) + LEVELS.ROUND_COUNT_PER_LEVEL * n);
+    // Runners only show up from the second round of a level.
+    const runners = r === 1 ? 0 : Math.round(total * runnerShare);
+    rounds.push({
+      round: r,
+      total,
+      walkers: total - runners,
+      runners,
+      health: ZOMBIE.BASE_HEALTH + ZOMBIE.HEALTH_PER_LEVEL * n + ZOMBIE.HEALTH_PER_ROUND * (r - 1),
+    });
+  }
   return {
-    total,
-    walkers: total - runners,
-    runners,
-    runnerShare,
-    health: ZOMBIE.BASE_HEALTH + ZOMBIE.HEALTH_PER_LEVEL * n,
+    count,
+    rounds,
+    totalZombies: rounds.reduce((a, r) => a + r.total, 0),
     walkerSpeed: Math.min(ZOMBIE.WALKER_MAX_SPEED, ZOMBIE.WALKER_SPEED + ZOMBIE.WALKER_SPEED_PER_LEVEL * n),
     runnerSpeed: Math.min(ZOMBIE.RUNNER_MAX_SPEED, ZOMBIE.RUNNER_SPEED + ZOMBIE.RUNNER_SPEED_PER_LEVEL * n),
     spawnInterval: Math.max(LEVELS.MIN_SPAWN_INTERVAL, LEVELS.SPAWN_INTERVAL - LEVELS.SPAWN_INTERVAL_PER_LEVEL * n),
@@ -43,14 +53,10 @@ export function enemyBudget(level) {
   };
 }
 
-export function lootBudget(level, windowCount) {
+export function lootBudget(level) {
   const n = level - 1;
   const counts = {};
-  for (const [type, rule] of Object.entries(LEVELS.LOOT)) {
-    let c = rule.base + rule.perLevel * n;
-    if (rule.extraPerWindow) c += rule.extraPerWindow * windowCount;
-    counts[type] = Math.round(c);
-  }
+  for (const [type, rule] of Object.entries(LEVELS.LOOT)) counts[type] = Math.round(rule.base + rule.perLevel * n);
   return counts;
 }
 
@@ -89,18 +95,8 @@ export function buildLevel(level, runSeed) {
   const generated = generateMapWithRetries(params);
   if (!generated) throw new Error(`Could not generate level ${level} for run seed ${runSeed}`);
   const { map } = generated;
-  const windowCount = map.rows.join('').split('W').length - 1;
-  const enemies = enemyBudget(level);
-  const loot = lootBudget(level, windowCount);
+  const rounds = roundPlan(level);
+  const loot = lootBudget(level);
   const items = placeLoot(map, loot, mulberry32(generated.seed + 99));
-  return {
-    level,
-    params,
-    map,
-    mapSeed: generated.seed,
-    windowCount,
-    enemies,
-    loot,
-    items,
-  };
+  return { level, params, map, mapSeed: generated.seed, rounds, loot, items };
 }

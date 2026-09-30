@@ -12,7 +12,7 @@ import { WEAPONS } from '../src/data/weapons.js';
 import { PLAYER } from '../src/config.js';
 
 const STEP = 1 / 60;
-const MAX_SECONDS = 150;
+const MAX_SECONDS = 400;
 
 function makeFrame() {
   return {
@@ -36,7 +36,19 @@ function clearance(world, x, y, dir, radius) {
   return 3;
 }
 
-// Bot: kites away from the crowd, shoots the nearest zombie, bandages when low.
+function lineOfSight(world, ax, ay, bx, by) {
+  const len = Math.hypot(bx - ax, by - ay);
+  const steps = Math.ceil(len / 8);
+  for (let i = 1; i <= steps; i++) {
+    const t = i / steps;
+    const x = ax + (bx - ax) * t;
+    const y = ay + (by - ay) * t;
+    if (world.blocksBullets(Math.floor(x / world.tileSize), Math.floor(y / world.tileSize))) return false;
+  }
+  return true;
+}
+
+// Bot: kites away from the crowd, shoots the nearest visible zombie, bandages when low.
 function botFrame(game, state, tick) {
   const f = makeFrame();
   const p = game.player;
@@ -45,7 +57,7 @@ function botFrame(game, state, tick) {
   for (const z of game.zombies) {
     if (z.isClimbing) continue;
     const d = Math.hypot(z.x - p.x, z.y - p.y);
-    if (d < nd) { nd = d; nearest = z; }
+    if (d < nd && lineOfSight(game.world, p.x, p.y, z.x, z.y)) { nd = d; nearest = z; }
   }
   if (nd < 300) {
     let best = null;
@@ -106,7 +118,7 @@ function runLevel(level, loadout, seed) {
   let tick = 0;
   let damageTaken = 0;
   let lastHealth = game.player.health;
-  while (game.state === 'playing' && t < MAX_SECONDS && game.spawner.remaining > 0) {
+  while (game.state === 'playing' && t < MAX_SECONDS) {
     game.update(STEP, botFrame(game, state, tick));
     if (game.player.health < lastHealth) damageTaken += lastHealth - game.player.health;
     lastHealth = game.player.health;
@@ -115,11 +127,12 @@ function runLevel(level, loadout, seed) {
   }
   return {
     died: game.state === 'dead',
-    cleared: game.spawner.remaining === 0,
+    cleared: game.state === 'complete',
+    rounds: game.rounds.round,
     seconds: Math.round(t),
     kills: game.player.kills,
-    enemies: levelData.enemies.total,
-    zombieHp: levelData.enemies.health,
+    enemies: levelData.rounds.totalZombies,
+    zombieHp: levelData.rounds.rounds[0].health,
     damageTaken: Math.round(damageTaken),
     ammoLeft: game.player.weapons.map((w) => `${w.def.id}:${w.mag}/${w.reserve}`).join(' '),
   };
@@ -131,7 +144,7 @@ function scenario(level, loadout, runs) {
   const avg = (k) => Math.round(rs.reduce((a, r) => a + r[k], 0) / rs.length);
   console.log(
     `level ${String(level).padStart(2)}  ${loadout.join('+').padEnd(12)} enemies ${avg('enemies')} x ${avg('zombieHp')}hp  ` +
-    `deaths ${rs.filter((r) => r.died).length}/${runs}  killed all ${rs.filter((r) => r.cleared).length}/${runs}  ` +
+    `deaths ${rs.filter((r) => r.died).length}/${runs}  cleared ${rs.filter((r) => r.cleared).length}/${runs}  rounds ${avg('rounds')}  ` +
     `avg ${avg('seconds')}s  dmg taken ${avg('damageTaken')}  kills ${avg('kills')}  ammo ${rs[0].ammoLeft}`,
   );
 }

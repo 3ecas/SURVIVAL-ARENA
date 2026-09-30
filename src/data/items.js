@@ -2,7 +2,6 @@
 // `use` items apply immediately when picked up.
 
 export const ITEM_TYPES = {
-  plank: { id: 'plank', name: 'Wood plank', color: '#c9955a', shape: 'bar', kind: 'stack' },
   scrap: { id: 'scrap', name: 'Scrap metal', color: '#9aa4b0', shape: 'gear', kind: 'stack' },
   cloth: { id: 'cloth', name: 'Cloth', color: '#e0d6c2', shape: 'square', kind: 'stack' },
   parts: { id: 'parts', name: 'Weapon parts', color: '#ce93d8', shape: 'gear', kind: 'stack' },
@@ -12,4 +11,4 @@ export const ITEM_TYPES = {
   decoy: { id: 'decoy', name: 'Decoy', color: '#4dd0e1', shape: 'circle', kind: 'use' },
 };
 
-export const INVENTORY_TYPES = ['plank', 'scrap', 'cloth', 'parts'];
+export const INVENTORY_TYPES = ['scrap', 'cloth', 'parts'];

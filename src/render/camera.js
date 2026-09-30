@@ -42,8 +42,10 @@ export class Camera {
     }
     let dx = target.x + lx - this.width / 2;
     let dy = target.y + ly - this.height / 2;
-    dx = worldWidth <= this.width ? (worldWidth - this.width) / 2 : Math.max(0, Math.min(dx, worldWidth - this.width));
-    dy = worldHeight <= this.height ? (worldHeight - this.height) / 2 : Math.max(0, Math.min(dy, worldHeight - this.height));
+    if (CAMERA.CLAMP_TO_MAP) {
+      dx = worldWidth <= this.width ? (worldWidth - this.width) / 2 : Math.max(0, Math.min(dx, worldWidth - this.width));
+      dy = worldHeight <= this.height ? (worldHeight - this.height) / 2 : Math.max(0, Math.min(dy, worldHeight - this.height));
+    }
     const k = this.initialised ? Math.min(1, CAMERA.SMOOTHING * dt) : 1;
     this.x += (dx - this.x) * k;
     this.y += (dy - this.y) * k;

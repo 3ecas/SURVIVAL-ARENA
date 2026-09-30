@@ -1,18 +1,17 @@
 // One level in play. Owns every entity list and calls the systems in a fixed
 // order each step. No drawing here.
 
-import { PATHFINDING, TILE_SIZE, ZOMBIE, CAMERA, PLAYER, GRENADE, DECOY, LIGHTING, POINTS, HUD } from './config.js';
+import { PATHFINDING, TILE_SIZE, ZOMBIE, CAMERA, PLAYER, GRENADE, DECOY, LIGHTING, POINTS, XP, HUD, LEVELS } from './config.js';
 import { World } from './world.js';
 import { Player } from './entities/player.js';
 import { Grenade } from './entities/grenade.js';
 import { Decoy } from './entities/decoy.js';
 import { ParticleSystem } from './particles.js';
 import { FlowField } from './systems/pathfinding.js';
-import { SpawnDirector } from './systems/spawning.js';
+import { RoundManager } from './systems/rounds.js';
 import { LightingSystem } from './systems/lighting.js';
 import { spawnItems, updateItems } from './systems/items.js';
 import { findInteractable, interact } from './systems/interaction.js';
-import { objectiveList } from './systems/objectives.js';
 import { fireShots, updateProjectiles, meleeAttack, zombieAttacksPlayer } from './systems/combat.js';
 import { explode, updateRings } from './systems/explosions.js';
 import { updateFloaters, awardPoints } from './systems/scoring.js';
@@ -37,14 +36,15 @@ export class Game {
     this.flow = new FlowField(this.world);
     this.flowTimer = 0;
     this.flowTargetKey = '';
-    this.spawner = new SpawnDirector(this, levelData.enemies);
+    this.rounds = new RoundManager(this, levelData.rounds);
     this.lighting = new LightingSystem(this);
     this.interactable = null;
     this.aim = { x: this.player.x + 1, y: this.player.y };
     this.shake = 0;
     this.time = 0;
-    this.state = 'playing'; // 'playing' | 'dead' | 'extracted'
-    this.announce = { text: `Level ${this.level}`, sub: 'Board up every window, then get back to the entrance', timer: HUD.ANNOUNCE_TIME };
+    this.xpEarned = 0;
+    this.state = 'playing'; // 'playing' | 'dead' | 'complete'
+    this.announce = { text: `Level ${this.level}`, sub: `Survive ${levelData.rounds.count} rounds`, timer: HUD.ANNOUNCE_TIME };
     this.endTimer = 0;
 
     const rng = mulberry32(levelData.mapSeed + 5);
@@ -53,10 +53,6 @@ export class Game {
   }
 
   // ---- queries used by systems -------------------------------------------
-
-  get objectives() {
-    return objectiveList(this);
-  }
 
   activeDecoy() {
     return this.decoys.find((d) => d.isActive) || null;
@@ -68,17 +64,34 @@ export class Game {
     return { x: this.player.x, y: this.player.y, radius: this.player.radius, kind: 'player' };
   }
 
+  get autoReturnDue() {
+    return this.state === 'complete' && this.endTimer >= LEVELS.LEVEL_COMPLETE_DELAY;
+  }
+
   // ---- events ------------------------------------------------------------
 
   onWorldChanged() {
     this.flowTimer = 0;
   }
 
-  extract() {
-    if (this.state !== 'playing') return;
-    this.state = 'extracted';
-    awardPoints(this, POINTS.EXTRACT_BONUS_PER_LEVEL * this.level, this.player.x, this.player.y - this.player.radius * 2, { big: true });
-    this.announce = { text: 'Extracted', sub: `Level ${this.level} cleared`, timer: HUD.ANNOUNCE_TIME };
+  onRoundStart(round) {
+    this.announce = { text: `Round ${round} / ${this.rounds.plan.count}`, sub: `${this.rounds.current.total} zombies`, timer: HUD.ANNOUNCE_TIME };
+  }
+
+  onRoundCleared() {
+    awardPoints(this, POINTS.ROUND_CLEAR, this.player.x, this.player.y - this.player.radius * 2, { big: true });
+    this.addXp(XP.ROUND_CLEAR);
+  }
+
+  onLevelComplete() {
+    this.state = 'complete';
+    awardPoints(this, POINTS.LEVEL_CLEAR_PER_LEVEL * this.level, this.player.x, this.player.y - this.player.radius * 2, { big: true });
+    this.addXp(XP.LEVEL_CLEAR_PER_LEVEL * this.level);
+    this.announce = { text: 'Level complete', sub: 'Returning to the hub', timer: HUD.ANNOUNCE_TIME };
+  }
+
+  addXp(amount) {
+    this.xpEarned += amount;
   }
 
   setAim(worldPoint) {
@@ -107,7 +120,7 @@ export class Game {
     this.resolveCollisions();
     updateProjectiles(this, dt);
     this.removeDeadZombies();
-    this.spawner.update(dt);
+    this.rounds.update(dt);
     updateItems(this, dt);
     this.interactable = findInteractable(this);
     if (frame.interactPressed) interact(this, this.interactable);

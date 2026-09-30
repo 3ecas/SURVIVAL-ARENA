@@ -1,10 +1,10 @@
 # Survival Arena
 
 A top-down survival shooter with rogue-lite structure, in the browser.
-Expeditions into dark, generated caves that grow every level; a flashlight,
-room lights you can switch or shoot out; zombies climbing in through windows;
-resources on the floor; crafting in a hub between maps. Board up every window,
-get back to the entrance, extract. Die and the run is over.
+Dark, generated buildings that grow every level; a flashlight and ceiling
+lights you can switch or shoot out; zombies climbing in through windows round
+after round; resources on the floor; a hub between levels with an armory,
+crafting, an XP bar and attribute points. Die and the run is over.
 
 HTML5 canvas + vanilla ES modules, no libraries, no build step.
 
@@ -21,18 +21,20 @@ Pages from `main`.
 
 ## How a run works
 
-1. **Hub.** Your stats and gear, your resources, a crafting list, and a
-   briefing for the next map: size, areas, windows to board, expected enemies
-   and what resources are scattered out there. Press Space to deploy.
-2. **Level.** You start at the entrance in the dark with a pistol, a knife and
-   whatever you crafted. Explore with the flashlight, pick up planks, scrap,
-   cloth, weapon parts, ammo boxes and medkits by walking over them. Board up
-   every window (E with a plank in hand); zombies stop coming once the last one
-   is boarded. Return to the entrance and press E to extract.
-3. **Back in the hub** with what you carried out. Craft ammo, bandages,
-   grenades, decoys, or a new gun from parts and scrap. The next map is bigger.
-4. **Death** ends the run: back to level 1 with starting gear. Best level and
-   score are kept. Progress is saved in the browser (localStorage).
+1. **Hub.** Three sections: the next map (rounds, size, expected enemies,
+   resources on the floor), gear & inventory (health, XP bar, attribute
+   points, loadout, resources) and the armory (unlock guns with score and
+   weapon parts, craft bandages, grenades and decoys from resources).
+   Tab switches section, W/S moves, Enter selects, Space deploys.
+2. **Level.** You start at the entrance of a dark building with a flashlight
+   and whatever you equipped. Zombies climb in through the windows of the
+   rooms you have opened up, round after round. Kill every zombie of every
+   round and the level is cleared; you return to the hub with your score,
+   experience and everything you picked up. Ammo is refilled in the hub.
+3. **Progression.** Kills give score (spent on guns) and XP; each player
+   level gives an attribute point for vitality, agility, handling or power.
+4. **Death** ends the run: back to level 1 with the pistol and knife. Best
+   level and score are kept. Progress is saved in the browser (localStorage).
 
 ## Controls
 
@@ -45,11 +47,11 @@ Pages from `main`.
 | Knife               | Right click or V           |
 | Grenade             | G                          |
 | Decoy               | Q                          |
-| Interact            | E (doors, windows, lights, extract) |
+| Interact            | E (doors, lights)          |
 | Bandage             | H                          |
 | Flashlight          | F                          |
 | Switch weapon       | 1 / 2 or mouse wheel       |
-| Hub                 | W/S choose recipe, Enter craft, Q switch active weapon, Space deploy, N new run |
+| Hub                 | Tab/A/D section, W/S move, Enter select, Q active weapon, Space deploy, N new run |
 
 ## Tools
 
@@ -67,10 +69,10 @@ See `docs/PLAN.md` for the design and generator pipeline.
 - `src/config.js` holds every tunable: camera zoom and look-ahead, lighting,
   level scaling and the maximum map size, loot budgets, enemy scaling, colours,
   key bindings.
-- `src/data/` is pure data: weapons, item types, crafting recipes.
-- `src/mapgen/` generates and validates maps (noise, corridors, areas, doors,
-  windows, entrance, lights). Runs in the browser and in Node.
-- `src/level.js` turns (level, run seed) into a map, an enemy budget and loot.
+- `src/data/` is pure data: weapons, item types, recipes, armory unlocks, attributes.
+- `src/mapgen/` generates and validates maps (BSP rooms, courtyards, areas,
+  openings, doors, windows, entrance, lights). Runs in the browser and in Node.
+- `src/level.js` turns (level, run seed) into a map, a round plan and loot.
 - `src/run.js` is the run state and its persistence; `src/hub.js` the hub.
 - `src/game.js` owns a level in play and calls the systems in order.
 - `src/entities/`, `src/systems/`, `src/render/` as in v1: things, rules, drawing.

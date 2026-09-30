@@ -24,6 +24,7 @@ export const CONTROLS = {
   WEAPON_2: ['Digit2'],
   CRAFT: ['Enter'],
   DEPLOY: ['Space'],
+  NEXT_PANEL: ['Tab'],
   NEW_RUN: ['KeyN'],
   FIRE_BUTTON: 0,
   MELEE_BUTTON: 2,
@@ -31,7 +32,7 @@ export const CONTROLS = {
 
 export const PLAYER = {
   RADIUS: 14,
-  SPEED: 220,
+  SPEED: 170,
   MAX_HEALTH: 100,
   REGEN_DELAY: 6,
   REGEN_RATE: 0, // no passive regeneration in expedition mode; use bandages
@@ -63,14 +64,15 @@ export const MELEE = {
 export const ZOMBIE = {
   RADIUS: 14,
   HEAD_RADIUS: 6,
-  BASE_HEALTH: 100,
-  HEALTH_PER_LEVEL: 30,
-  WALKER_SPEED: 74,
-  WALKER_SPEED_PER_LEVEL: 3,
-  WALKER_MAX_SPEED: 115,
-  RUNNER_SPEED: 150,
+  BASE_HEALTH: 150,
+  HEALTH_PER_LEVEL: 25,
+  HEALTH_PER_ROUND: 12,
+  WALKER_SPEED: 52,
+  WALKER_SPEED_PER_LEVEL: 2,
+  WALKER_MAX_SPEED: 85,
+  RUNNER_SPEED: 110,
   RUNNER_SPEED_PER_LEVEL: 3,
-  RUNNER_MAX_SPEED: 185,
+  RUNNER_MAX_SPEED: 145,
   ATTACK_REACH: 10,
   ATTACK_DAMAGE: 25,
   ATTACK_WINDUP: 0.4,
@@ -96,32 +98,51 @@ export const LEVELS = {
   MAX_AREAS: 9,
   WINDOWS_PER_AREA: 2,
   LIGHTS_PER_AREA: [1, 2],
-  ENEMIES_BASE: 10,
-  ENEMIES_PER_LEVEL: 6,
+  // Rounds per level and zombies per round.
+  BASE_ROUNDS: 3,
+  ROUNDS_PER_LEVEL: 0.34,
+  MAX_ROUNDS: 6,
+  ROUND_BASE_COUNT: 4,
+  ROUND_COUNT_PER_ROUND: 2,
+  ROUND_COUNT_PER_LEVEL: 1.5,
   RUNNER_START_LEVEL: 3,
-  RUNNER_SHARE_PER_LEVEL: 0.1,
-  RUNNER_MAX_SHARE: 0.5,
-  SPAWN_INTERVAL: 2.2,
-  SPAWN_INTERVAL_PER_LEVEL: 0.12,
+  RUNNER_SHARE_PER_LEVEL: 0.08,
+  RUNNER_MAX_SHARE: 0.45,
+  SPAWN_INTERVAL: 2.0,
+  SPAWN_INTERVAL_PER_LEVEL: 0.1,
   MIN_SPAWN_INTERVAL: 0.7,
-  MAX_ALIVE: 16,
+  MAX_ALIVE: 12,
   MAX_ALIVE_PER_LEVEL: 1,
-  MAX_ALIVE_CAP: 30,
-  FIRST_SPAWN_DELAY: 6,
+  MAX_ALIVE_CAP: 26,
+  FIRST_ROUND_DELAY: 5,
+  INTERMISSION: 6,
+  LEVEL_COMPLETE_DELAY: 4,
   WINDOW_SAME_AREA_WEIGHT: 3,
   WINDOW_DISTANCE_SOFTENING: 300,
-  // Loot budget per level: base + per level, planks always cover the windows.
+  // Loot budget per level: base + per level.
   LOOT: {
-    plank: { base: 2, perLevel: 0, extraPerWindow: 1 },
     scrap: { base: 4, perLevel: 1 },
     cloth: { base: 2, perLevel: 0.5 },
-    ammo: { base: 3, perLevel: 1 },
-    medkit: { base: 1, perLevel: 0.2 },
+    ammo: { base: 4, perLevel: 1 },
+    medkit: { base: 1, perLevel: 0.3 },
     parts: { base: 1, perLevel: 0.5 },
     grenade: { base: 1, perLevel: 0.3 },
     decoy: { base: 0, perLevel: 0.25 },
   },
-  AMMO_BOX_FRACTION: 0.4, // of the current weapon's magazine size, per box
+  AMMO_BOX_FRACTION: 0.5, // of the current weapon's magazine size, per box
+  ZOMBIE_AMMO_DROP_CHANCE: 0.12,
+};
+
+// Experience and character progression.
+export const XP = {
+  KILL_WALKER: 10,
+  KILL_RUNNER: 16,
+  HEADSHOT_BONUS: 4,
+  ROUND_CLEAR: 30,
+  LEVEL_CLEAR_PER_LEVEL: 80,
+  BASE_TO_NEXT: 120,
+  GROWTH: 1.35,
+  POINTS_PER_LEVEL: 1,
 };
 
 export const CAMERA = {
@@ -129,25 +150,23 @@ export const CAMERA = {
   LOOKAHEAD: 0.28, // fraction of the aim offset the camera leads toward
   MAX_LOOKAHEAD: 140,
   SMOOTHING: 6, // higher = snappier
+  CLAMP_TO_MAP: false, // false: always centred on the player
   SHAKE_DECAY: 14,
 };
 
 export const LIGHTING = {
-  AMBIENT: 0.94, // darkness alpha over unlit areas
-  PLAYER_GLOW_RADIUS: 75,
+  AMBIENT: 0.93, // darkness alpha over unlit areas
+  PLAYER_GLOW_RADIUS: 80,
   FLASHLIGHT_ANGLE: Math.PI / 3,
   FLASHLIGHT_LENGTH: 460,
-  FLASHLIGHT_RAYS: 64,
-  ROOM_LIGHT_RADIUS: 190,
-  ROOM_LIGHT_RAYS: 48,
-  RAY_STEP: 6,
+  FLASHLIGHT_RAYS: 140,
+  ROOM_LIGHT_RADIUS: 210,
+  ROOM_LIGHT_RAYS: 180,
+  FULL_BRIGHT_FRACTION: 0.55, // part of a light's radius that is fully lit
+  WALL_LIGHT_DEPTH: 6, // px a light reaches into a wall so the wall face is lit
   LIGHT_RADIUS: 8, // hit circle of a lamp
   LIGHT_HEALTH: 30,
   LIGHTS_ON_CHANCE: 0.5,
-};
-
-export const OBJECTIVES = {
-  EXTRACT_RANGE: 60,
 };
 
 export const POINTS = {
@@ -155,8 +174,8 @@ export const POINTS = {
   KILL: 50,
   HEADSHOT_KILL: 100,
   MELEE_KILL: 130,
-  BOARD_WINDOW: 75,
-  EXTRACT_BONUS_PER_LEVEL: 500,
+  ROUND_CLEAR: 100,
+  LEVEL_CLEAR_PER_LEVEL: 300,
 };
 
 export const COMBAT = {
@@ -309,6 +328,11 @@ export const COLORS = {
   FLOATER_BAD: '#ef5350',
   ANNOUNCE: '#ff5252',
   SUCCESS: '#8fd18f',
+  XP: '#b39ddb',
+  XP_BACK: 'rgba(179,157,219,0.2)',
+  HUB_PANEL: 'rgba(255,255,255,0.04)',
+  HUB_PANEL_FOCUS: 'rgba(79,195,247,0.5)',
+  LOCKED: 'rgba(255,255,255,0.35)',
   PROMPT_BACK: 'rgba(0,0,0,0.7)',
   OVERLAY: 'rgba(0,0,0,0.75)',
   HUB_BACKGROUND: '#101318',
@@ -332,10 +356,12 @@ export const HUD = {
 };
 
 export const HUB = {
-  COLUMN_GAP: 30,
-  LINE: 24,
-  TITLE_SIZE: 34,
-  HEADING_SIZE: 18,
-  TEXT_SIZE: 15,
-  PADDING: 24,
+  COLUMN_GAP: 24,
+  LINE: 22,
+  TITLE_SIZE: 30,
+  HEADING_SIZE: 17,
+  TEXT_SIZE: 14,
+  PADDING: 22,
+  PANEL_RADIUS: 8,
+  PANEL_PAD: 16,
 };

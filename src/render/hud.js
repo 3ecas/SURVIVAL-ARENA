@@ -1,13 +1,13 @@
 // Screen-space overlay: objectives, health, bandages, score, weapon panel,
 // inventory, prompts, announcements and the end-of-level overlay.
 
-import { COLORS, HUD, MELEE } from '../config.js';
+import { COLORS, HUD, MELEE, LEVELS } from '../config.js';
 import { ITEM_TYPES, INVENTORY_TYPES } from '../data/items.js';
 
 export function drawHud(ctx, game, width, height) {
   ctx.save();
   ctx.textBaseline = 'middle';
-  drawObjectives(ctx, game);
+  drawProgress(ctx, game);
   drawTop(ctx, game, width);
   drawHealthAndScore(ctx, game, height);
   drawWeaponPanel(ctx, game, width, height);
@@ -18,17 +18,23 @@ export function drawHud(ctx, game, width, height) {
   ctx.restore();
 }
 
-function drawObjectives(ctx, game) {
+function drawProgress(ctx, game) {
   const m = HUD.MARGIN;
+  const r = game.rounds;
   ctx.textAlign = 'left';
   ctx.fillStyle = COLORS.HUD_DIM;
   ctx.font = `${HUD.FONT_SIZE - 3}px ${HUD.FONT}`;
-  ctx.fillText('OBJECTIVES', m, m);
+  ctx.fillText('ROUNDS', m, m);
   ctx.font = `bold ${HUD.FONT_SIZE - 1}px ${HUD.FONT}`;
-  game.objectives.forEach((o, i) => {
-    ctx.fillStyle = o.done ? COLORS.OBJECTIVE_DONE : COLORS.OBJECTIVE_OPEN;
-    ctx.fillText(`${o.done ? '✓' : '○'} ${o.text}`, m, m + HUD.FONT_SIZE * 1.4 * (i + 1));
-  });
+  for (let i = 1; i <= r.plan.count; i++) {
+    const done = i < r.round || (i === r.round && r.state !== 'active') || r.state === 'done';
+    const active = i === r.round && r.state === 'active';
+    ctx.fillStyle = done ? COLORS.OBJECTIVE_DONE : active ? COLORS.ANNOUNCE : COLORS.HUD_DIM;
+    ctx.fillText(done ? '✓' : active ? '▶' : '○', m + (i - 1) * 22, m + HUD.FONT_SIZE * 1.4);
+  }
+  ctx.fillStyle = COLORS.HUD_DIM;
+  ctx.font = `${HUD.FONT_SIZE - 3}px ${HUD.FONT}`;
+  ctx.fillText(`XP this level: ${game.xpEarned}`, m, m + HUD.FONT_SIZE * 2.8);
 }
 
 function drawTop(ctx, game, width) {
@@ -38,9 +44,11 @@ function drawTop(ctx, game, width) {
   ctx.fillText(`Level ${game.level}`, width / 2, HUD.MARGIN + HUD.FONT_SIZE_LARGE / 2);
   ctx.fillStyle = COLORS.HUD_DIM;
   ctx.font = `${HUD.FONT_SIZE - 3}px ${HUD.FONT}`;
-  const s = game.spawner;
-  const windows = game.world.activeWindows().length;
-  const line = windows === 0 ? `${game.zombies.length} zombies left inside` : `${s.remaining} zombies expected  ·  ${windows} open window${windows === 1 ? '' : 's'}`;
+  const r = game.rounds;
+  let line;
+  if (r.state === 'active') line = `Round ${r.round} / ${r.plan.count}  ·  ${r.remaining} zombies left`;
+  else if (r.state === 'done') line = 'All rounds cleared';
+  else line = r.round === 0 ? `First round in ${Math.ceil(r.timer)}` : `Round ${r.round} cleared  ·  next in ${Math.ceil(r.timer)}`;
   ctx.fillText(line, width / 2, HUD.MARGIN + HUD.FONT_SIZE_LARGE + 6);
 }
 
@@ -129,7 +137,7 @@ function drawInventory(ctx, game, width, height) {
   }
   ctx.fillStyle = COLORS.HUD_DIM;
   ctx.font = `${HUD.FONT_SIZE - 5}px ${HUD.FONT}`;
-  ctx.fillText('planks · scrap · cloth · parts', x, y - HUD.FONT_SIZE);
+  ctx.fillText('scrap · cloth · parts', x, y - HUD.FONT_SIZE);
 }
 
 function drawFireModeIcon(ctx, mode, cx, cy) {
@@ -221,13 +229,13 @@ function drawAnnouncement(ctx, game, width, height) {
 }
 
 function drawEndOverlay(ctx, game, width, height) {
-  const won = game.state === 'extracted';
+  const won = game.state === 'complete';
   ctx.fillStyle = COLORS.OVERLAY;
   ctx.fillRect(0, 0, width, height);
   ctx.textAlign = 'center';
   ctx.fillStyle = won ? COLORS.SUCCESS : COLORS.ANNOUNCE;
   ctx.font = `bold ${HUD.FONT_SIZE_TITLE}px ${HUD.FONT}`;
-  ctx.fillText(won ? 'Extracted' : 'You died', width / 2, height * 0.35);
+  ctx.fillText(won ? 'Level complete' : 'You died', width / 2, height * 0.35);
   ctx.fillStyle = COLORS.HUD_TEXT;
   ctx.font = `bold ${HUD.FONT_SIZE_LARGE}px ${HUD.FONT}`;
   const base = height * 0.35 + HUD.FONT_SIZE_TITLE;
@@ -235,6 +243,6 @@ function drawEndOverlay(ctx, game, width, height) {
   ctx.fillText(`Score: ${game.player.score}`, width / 2, base + HUD.FONT_SIZE_LARGE * 1.4);
   ctx.fillStyle = COLORS.HUD_DIM;
   ctx.font = `${HUD.FONT_SIZE}px ${HUD.FONT}`;
-  ctx.fillText(`Kills: ${game.player.kills}`, width / 2, base + HUD.FONT_SIZE_LARGE * 2.6);
-  ctx.fillText(won ? 'Press Enter to return to the hub' : 'Run over. Press Enter to return to the hub', width / 2, base + HUD.FONT_SIZE_LARGE * 4);
+  ctx.fillText(`Kills: ${game.player.kills}   ·   XP earned: ${game.xpEarned}`, width / 2, base + HUD.FONT_SIZE_LARGE * 2.6);
+  ctx.fillText(won ? `Back to the hub in ${Math.max(0, Math.ceil(LEVELS.LEVEL_COMPLETE_DELAY - game.endTimer))}s (Enter to skip)` : 'Run over. Press Enter to return to the hub', width / 2, base + HUD.FONT_SIZE_LARGE * 4);
 }

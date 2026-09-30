@@ -2,6 +2,7 @@ import { PLAYER, MELEE } from '../config.js';
 import { WEAPONS } from '../data/weapons.js';
 import { INVENTORY_TYPES } from '../data/items.js';
 import { Weapon } from './weapon.js';
+import { derivedStats } from '../run.js';
 
 export class Player {
   // `run` is the run state (src/run.js) the player is restored from.
@@ -10,8 +11,10 @@ export class Player {
     this.y = y;
     this.radius = PLAYER.RADIUS;
     this.aim = 0;
-    this.maxHealth = PLAYER.MAX_HEALTH;
+    this.stats = derivedStats(run);
+    this.maxHealth = this.stats.maxHealth;
     this.health = Math.min(this.maxHealth, run.health);
+    this.points = run.points;
     this.regenTimer = 0;
     this.damageFlash = 0;
     this.score = run.score;
@@ -26,7 +29,7 @@ export class Player {
     this.meleeSwing = 0;
     this.flashlightOn = true;
     this.weapons = run.weapons.map((w) => {
-      const weapon = new Weapon(WEAPONS[w.id]);
+      const weapon = new Weapon(WEAPONS[w.id], this.stats.reloadMultiplier);
       weapon.mag = w.mag;
       weapon.reserve = w.reserve;
       return weapon;
@@ -51,7 +54,7 @@ export class Player {
       this.weaponIndex = this.weapons.indexOf(owned);
       return owned;
     }
-    const weapon = new Weapon(def);
+    const weapon = new Weapon(def, this.stats.reloadMultiplier);
     if (this.weapons.length < PLAYER.MAX_WEAPONS) {
       this.weapons.push(weapon);
       this.weaponIndex = this.weapons.length - 1;
@@ -76,8 +79,9 @@ export class Player {
   move(dirX, dirY, dt) {
     const len = Math.hypot(dirX, dirY);
     if (len === 0) return;
-    this.x += (dirX / len) * PLAYER.SPEED * dt;
-    this.y += (dirY / len) * PLAYER.SPEED * dt;
+    const speed = PLAYER.SPEED * this.stats.speedMultiplier;
+    this.x += (dirX / len) * speed * dt;
+    this.y += (dirY / len) * speed * dt;
   }
 
   takeDamage(amount) {

@@ -1,6 +1,7 @@
 // Firing, projectile sweeps, headshots, melee and zombie damage/death.
 
-import { COMBAT, MELEE, ZOMBIE, COLORS } from '../config.js';
+import { COMBAT, MELEE, ZOMBIE, COLORS, XP, LEVELS } from '../config.js';
+import { Item } from '../entities/item.js';
 import { Projectile } from '../entities/projectile.js';
 import { awardPoints, pointsForHit, pointsForKill } from './scoring.js';
 import { explode } from './explosions.js';
@@ -26,7 +27,7 @@ export function fireShots(game, weapon, shots) {
         y: muzzleY,
         angle,
         speed: explosive ? def.projectileSpeed : COMBAT.BULLET_SPEED,
-        damage: def.damage,
+        damage: def.damage * p.stats.damageMultiplier,
         kind: explosive ? 'explosive' : 'bullet',
         blastRadius: def.blastRadius || 0,
         maxDistance: def.range || COMBAT.BULLET_MAX_DISTANCE,
@@ -126,7 +127,7 @@ export function meleeAttack(game) {
     if (d > MELEE.RANGE + z.radius) continue;
     const a = Math.atan2(z.y - p.y, z.x - p.x);
     if (Math.abs(angleDiff(p.aim, a)) > MELEE.ARC / 2) continue;
-    damageZombie(game, z, MELEE.DAMAGE, { melee: true, angle: a, source: 'melee' });
+    damageZombie(game, z, MELEE.DAMAGE * p.stats.damageMultiplier, { melee: true, angle: a, source: 'melee' });
   }
 }
 
@@ -145,7 +146,9 @@ function killZombie(game, z, info) {
   game.player.kills++;
   const { amount, color } = pointsForKill(info);
   awardPoints(game, amount, z.x, z.y - z.radius, { color, big: true });
+  game.addXp((z.type === 'runner' ? XP.KILL_RUNNER : XP.KILL_WALKER) + (info.headshot ? XP.HEADSHOT_BONUS : 0));
   game.particles.death(z.x, z.y, z.type === 'runner' ? COLORS.ZOMBIE_RUNNER_HEAD : COLORS.DEATH);
+  if (Math.random() < LEVELS.ZOMBIE_AMMO_DROP_CHANCE && !game.world.isSolidAtPoint(z.x, z.y)) game.items.push(new Item('ammo', z.x, z.y));
 }
 
 // Zombie touching the player: called by the game after zombie movement.

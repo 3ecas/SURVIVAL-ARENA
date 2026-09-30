@@ -1,77 +1,71 @@
-# Survival Arena – design plan (v2: expedition mode)
+# Survival Arena – design plan (v3: rounds, hub progression, buildings)
 
 ## Concept
 
 Top-down survival shooter with rogue-lite structure. A run is a sequence of
-expeditions into generated maps that grow each level. Between maps the player
-is in the **hub**: stats, gear, crafting and a briefing about the next map.
-On a map it is dark; the player sees only a small glow around them and a
-flashlight cone. Some rooms have lights that can be switched on and off, or
-shot out. Zombies climb in through windows. Resources are scattered on the
-floor and picked up by walking over them. The objective is to **board up
-every window** with planks found on the map, then get back to the entrance
-and extract. Death ends the run.
+levels; each level is a generated building where you survive a number of
+rounds of zombies climbing in through the windows. Between levels you are in
+the **hub**: next-map briefing, gear & inventory (attributes, loadout),
+armory (unlock guns with score and weapon parts, craft consumables from
+resources). Kills give score and experience; player levels give attribute
+points. Death ends the run; best level and score are kept.
 
 ## Run structure
 
 ```
-hub  --deploy-->  level N  --extract-->  hub (level N+1)  --deploy--> ...
-                          --death-->    hub (run reset, best score kept)
+hub  --deploy-->  level N (rounds 1..R)  --all cleared-->  hub (level N+1)
+                                        --death-->        hub (run reset)
 ```
 
-Run state (level, weapons and ammo, inventory, health, score, kills) is saved
-in localStorage after every hub visit and extraction.
+Between levels ammo is refilled; health, resources, consumables, unlocks,
+XP and attributes carry over. Saved in localStorage after every hub action.
 
-## Map generation
+## Map generation (src/mapgen/generator.js)
 
-`src/mapgen/generator.js` (browser + Node) generates a cave map from seeded
-value noise for a given `{ width, height, areas, seed }`:
+Architectural, not noise:
 
-1. noise + cellular smoothing → floor/rock
-2. connect caverns with noise-weighted Dijkstra corridors
-3. spread area seeds, grow areas, force loops, wall the borders
-4. doors on legal border tiles (spanning tree + loop edges), no prices
-5. open void pockets in solid rock; windows on walls with void behind
-6. entrance on the outer ring in area 0; spawn just inside it
-7. one or two lights per area on open floor
+1. BSP-split the building into rectangular rooms (4-14 tiles a side);
+   the split lines are 1-tile walls.
+2. Pick an entrance room on the border; turn ~20% of rooms into courtyards
+   (void) so interior rooms get windows too; keep the room graph connected.
+3. Group rooms into areas (farthest-point seeds, BFS growth). Rooms of one
+   area are joined by 2-3 tile openings (spanning tree + extras); areas are
+   joined by 2-tile doors (spanning tree + loop edges so each area has two).
+4. 1x1 / 2x2 pillars in big rooms, an entrance on the outer ring, windows
+   spread along walls that face the outside or a courtyard, a ceiling light
+   at the centre of the biggest rooms of each area.
+5. Validate with src/mapgen/validate.js; retry the seed on failure.
 
-Level size grows with the level (see `LEVELS` in `config.js`): 30x22 at level
-1, +4x+3 per level, capped at 62x46 (the cap is easy to change).
+Levels grow from 30x22 to a 62x46 cap (`LEVELS` in config.js).
 
-`tools/check-map.js` validates generated levels for several seeds and sizes.
-`tools/gen-map.js <level> <seed>` prints one.
+## Rounds (src/systems/rounds.js)
 
-## Files (changes from v1)
+Level L has 3 + L/2 rounds (max 8). Round r spawns
+4 + 2(r-1) + 2(L-1) zombies with 150 + 25(L-1) + 12(r-1) health; runners
+appear from level 3, never in a level's first round. Zombies only spawn from
+windows in rooms the player has opened up (reachable through open doors).
+Round cleared: +100 score, +30 XP. Level cleared: +300 x L score, +80 x L XP,
+then back to the hub after a few seconds.
 
-```
-src/config.js                camera zoom/lookahead, lighting, levels, items, hub
-src/data/weapons.js          no prices; source 'start' | 'craft'
-src/data/items.js            pickup types (plank, scrap, cloth, ammo, medkit, parts, grenade, decoy)
-src/data/recipes.js          crafting recipes (ammo, bandage, weapons)
-src/mapgen/rng.js            seeded RNG + hash
-src/mapgen/noise.js          value noise / fBm
-src/mapgen/generator.js      the generator above (pure logic, no I/O)
-src/mapgen/validate.js       checkMap(): structural validation shared by tools
-src/level.js                 builds a level from (run seed, level): map, enemy budget, loot
-src/run.js                   run state + localStorage persistence
-src/hub.js                   hub state: crafting, deploy, briefing
-src/world.js                 parses generated map: areas, doors, windows, entrance, lights
-src/game.js                  a level in play; extraction/death report back to main
-src/main.js                  app state machine: hub <-> level
-src/entities/item.js         floor pickup
-src/systems/lighting.js      light sources, raycast visibility polygons, light damage
-src/systems/items.js         loot placement and pickup
-src/systems/objectives.js    board windows, extract
-src/systems/spawning.js      window spawns from the level's enemy budget
-src/systems/interaction.js   doors, windows (board), lights (toggle), entrance (extract)
-src/systems/crafting.js      apply recipes to the run inventory
-src/render/lighting.js       darkness overlay with light cut-outs
-src/render/hub.js            hub screen
-removed: rounds.js, economy.js, data/map*.js, wall buys, crate
-```
+## Progression
+
+- XP thresholds grow by 1.35 per player level; each level gives 1 point.
+- Attributes: Vitality (+10 max health), Agility (+4% speed),
+  Handling (-7% reload time), Power (+5% damage). Max 10 each.
+- Armory unlocks cost score and weapon parts and require a player level
+  (src/data/armory.js). Unlocked guns can be equipped in either slot.
+- Consumables (bandage, grenade, decoy) are crafted from cloth/scrap/parts.
+
+## Lighting
+
+Darkness overlay; the player glow, the flashlight cone and lit lamps are cut
+out with radial falloff. Visibility is an exact grid raycast; every wall
+tile a ray hits is lit as a whole block with the same falloff, so the wall
+piece in the flashlight beam and the walls around a ceiling light are bright.
 
 ## Controls
 
 WASD move, mouse aim, left click fire, R reload, right click / V knife,
-G grenade, Q decoy, E interact, H bandage, F flashlight, 1/2 or wheel switch
-weapon. Hub: number keys craft, Enter deploy, N new run.
+G grenade, Q decoy, E interact (doors, lights), H bandage, F flashlight,
+1/2 or wheel switch weapon. Hub: Tab / A / D switch section, W/S move,
+Enter select, Q active weapon, Space deploy, N new run.

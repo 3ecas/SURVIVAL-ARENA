@@ -38,8 +38,8 @@ function startNewRun() {
 }
 
 function finishLevel() {
-  const extracted = game.state === 'extracted';
-  run = applyLevelResult(run, meta, game.player, { extracted, level: game.level });
+  const cleared = game.state === 'complete';
+  run = applyLevelResult(run, meta, game.player, { cleared, level: game.level, xpEarned: game.xpEarned });
   saveState(run, meta);
   hub = new Hub(run, meta);
   game = null;
@@ -64,7 +64,8 @@ function frame(now) {
 
   if (mode === 'level') {
     accumulator += dt;
-    if (game.state !== 'playing' && game.endTimer > 1 && (intent.craftPressed || intent.deployPressed || intent.firePressed)) {
+    const wantsOut = game.endTimer > 1 && (intent.craftPressed || intent.deployPressed || intent.firePressed);
+    if (game.state !== 'playing' && (wantsOut || game.autoReturnDue)) {
       finishLevel();
       renderer.renderHub(hub);
     } else {

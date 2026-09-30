@@ -25,9 +25,10 @@ export class LightingRenderer {
     l.globalCompositeOperation = 'destination-out';
     l.save();
     camera.apply(l);
+    const ts = game.world.tileSize;
     for (const src of game.lighting.sources()) {
       if (src.kind === 'glow') cutCircle(l, src.x, src.y, src.radius);
-      else cutPolygon(l, src);
+      else cutPolygon(l, src, ts);
     }
     l.restore();
     l.globalCompositeOperation = 'source-over';
@@ -39,7 +40,7 @@ export class LightingRenderer {
 function cutCircle(l, x, y, radius) {
   const g = l.createRadialGradient(x, y, 0, x, y, radius);
   g.addColorStop(0, COLORS.FLASHLIGHT);
-  g.addColorStop(0.6, 'rgba(255,255,255,0.7)');
+  g.addColorStop(LIGHTING.FULL_BRIGHT_FRACTION, COLORS.FLASHLIGHT);
   g.addColorStop(1, 'rgba(255,255,255,0)');
   l.fillStyle = g;
   l.beginPath();
@@ -47,12 +48,12 @@ function cutCircle(l, x, y, radius) {
   l.fill();
 }
 
-function cutPolygon(l, src) {
+function cutPolygon(l, src, ts) {
   const pts = src.polygon;
   if (!pts || pts.length < 2) return;
   const g = l.createRadialGradient(src.x, src.y, 0, src.x, src.y, src.radius);
   g.addColorStop(0, COLORS.FLASHLIGHT);
-  g.addColorStop(0.5, 'rgba(255,255,255,0.85)');
+  g.addColorStop(LIGHTING.FULL_BRIGHT_FRACTION, COLORS.FLASHLIGHT);
   g.addColorStop(1, 'rgba(255,255,255,0)');
   l.fillStyle = g;
   l.beginPath();
@@ -61,4 +62,7 @@ function cutPolygon(l, src) {
   for (const p of pts) l.lineTo(p.x, p.y);
   l.closePath();
   l.fill();
+  // Every wall piece the light reaches is lit as a whole block, with the
+  // same falloff, so walls read as solid lit surfaces instead of slivers.
+  for (const w of src.walls || []) l.fillRect(w.tx * ts, w.ty * ts, ts, ts);
 }
