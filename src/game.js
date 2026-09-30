@@ -3,6 +3,7 @@
 
 import { PATHFINDING, TILE_SIZE, ZOMBIE, CAMERA, PLAYER, GRENADE, DECOY } from './config.js';
 import { World } from './world.js';
+import { MAPS, DEFAULT_MAP } from './data/maps.js';
 import { Player } from './entities/player.js';
 import { Grenade } from './entities/grenade.js';
 import { Decoy } from './entities/decoy.js';
@@ -16,8 +17,9 @@ import { updateFloaters } from './systems/scoring.js';
 import { resolveCircleVsWorld, separateCircles, separatePair } from './systems/collision.js';
 
 export class Game {
-  constructor() {
-    this.world = new World();
+  constructor(mapId = DEFAULT_MAP) {
+    this.mapId = MAPS[mapId] ? mapId : DEFAULT_MAP;
+    this.world = new World(MAPS[this.mapId]);
     this.player = new Player(this.world.playerSpawn.x, this.world.playerSpawn.y);
     this.zombies = [];
     this.projectiles = [];
@@ -40,6 +42,10 @@ export class Game {
   }
 
   // ---- queries used by systems -------------------------------------------
+
+  get mapName() {
+    return MAPS[this.mapId].name || this.mapId;
+  }
 
   aliveZombieCount() {
     return this.zombies.length;

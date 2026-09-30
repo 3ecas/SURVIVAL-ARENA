@@ -46,7 +46,7 @@ function drawRound(ctx, game, width) {
   ctx.fillStyle = COLORS.HUD_DIM;
   ctx.font = `${HUD.FONT_SIZE - 3}px ${HUD.FONT}`;
   const alive = game.zombies.length + r.toSpawn;
-  const line = r.state === 'active' ? `${alive} remaining` : r.round === 0 ? 'Get ready' : `Next round in ${Math.ceil(r.timer)}`;
+  const line = r.state === 'active' ? `${alive} remaining` : r.round === 0 ? `Get ready  ·  ${game.mapName}  ·  M: switch map` : `Next round in ${Math.ceil(r.timer)}`;
   ctx.fillText(line, width / 2, HUD.MARGIN + HUD.FONT_SIZE_LARGE + 6);
 }
 
@@ -193,5 +193,5 @@ function drawGameOver(ctx, game, width, height) {
   ctx.fillStyle = COLORS.HUD_DIM;
   ctx.font = `${HUD.FONT_SIZE}px ${HUD.FONT}`;
   ctx.fillText(`Kills: ${game.player.kills}`, width / 2, height * 0.35 + HUD.FONT_SIZE_TITLE + HUD.FONT_SIZE_LARGE * 2.6);
-  ctx.fillText('Press Enter or click to play again', width / 2, height * 0.35 + HUD.FONT_SIZE_TITLE + HUD.FONT_SIZE_LARGE * 4);
+  ctx.fillText('Press Enter or click to play again  ·  M: switch map', width / 2, height * 0.35 + HUD.FONT_SIZE_TITLE + HUD.FONT_SIZE_LARGE * 4);
 }

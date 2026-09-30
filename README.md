@@ -31,13 +31,29 @@ The game must be served over HTTP because it uses ES modules.
 | Interact (buy/open) | E                         |
 | Switch weapon       | 1 / 2 or mouse wheel      |
 | Restart after death | Enter or click            |
+| Switch map          | M                         |
+
+## Maps
+
+- **Arena** (default): the hand-designed map in `src/data/map.js`, three rows
+  of rooms joined by priced doors. See `docs/PLAN.md`.
+- **Caves**: generated from seeded value noise by `tools/gen-map.js` into
+  `src/data/map-caves.js`. Irregular caverns, winding one-tile passages, void
+  pockets in the rock that zombies climb out of. Same 46x34 grid, same rules:
+  7 areas, every area has two or more doors and windows, prices rise with
+  distance from the start.
+
+Pick a map with `?map=arena` or `?map=caves` in the URL, or press M in game.
 
 ## Tools
 
 ```
-npm run check-map          # validates src/data/map.js (exit 1 on problems)
+npm run check-map          # validates every map in src/data/maps.js (exit 1 on problems)
 node tools/balance-sim.js  # headless bot plays rounds with different loadouts
 node tools/balance-sim.js 8 ar,smg 5 ABCD   # round 8, AR+SMG, 5 runs, doors A-D open
+MAP=caves node tools/balance-sim.js         # same, on the caves map
+node tools/gen-map.js 20 --print            # preview a generated cave map for seed 20
+node tools/gen-map.js 20                    # write it to src/data/map-caves.js
 ```
 
 ## Code layout

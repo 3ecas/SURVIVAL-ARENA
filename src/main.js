@@ -4,11 +4,25 @@ import { LOOP } from './config.js';
 import { Game } from './game.js';
 import { Input } from './input.js';
 import { Renderer } from './render/renderer.js';
+import { MAPS, DEFAULT_MAP } from './data/maps.js';
 
 const canvas = document.getElementById('game');
 const renderer = new Renderer(canvas);
 const input = new Input(canvas);
-let game = new Game();
+
+const mapIds = Object.keys(MAPS);
+const requested = new URLSearchParams(window.location.search).get('map');
+let mapId = MAPS[requested] ? requested : DEFAULT_MAP;
+let game = new Game(mapId);
+
+function startGame(id) {
+  mapId = id;
+  game = new Game(id);
+  accumulator = 0;
+  const url = new URL(window.location.href);
+  url.searchParams.set('map', id);
+  window.history.replaceState(null, '', url);
+}
 
 function resize() {
   renderer.resize(window.innerWidth, window.innerHeight);
@@ -25,9 +39,11 @@ function frame(now) {
   accumulator += dt;
 
   let intent = input.getFrame();
-  if (game.state === 'gameover' && intent.restartPressed) {
-    game = new Game();
-    accumulator = 0;
+  if (intent.switchMapPressed) {
+    startGame(mapIds[(mapIds.indexOf(mapId) + 1) % mapIds.length]);
+    intent = Input.withoutEdges(intent);
+  } else if (game.state === 'gameover' && intent.restartPressed) {
+    startGame(mapId);
     intent = Input.withoutEdges(intent);
   }
   game.setAim(renderer.camera.screenToWorld(intent.aimScreen));

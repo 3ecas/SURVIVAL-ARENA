@@ -10,9 +10,11 @@
 //  - the crate exists and can be stood in front of
 // Exits with code 1 and a list of problems when anything fails.
 
-import { MAP } from '../src/data/map.js';
+import { MAPS } from '../src/data/maps.js';
 import { WEAPONS } from '../src/data/weapons.js';
 
+// Returns { errors, warnings, stats } for one map definition.
+export function checkMap(MAP) {
 const errors = [];
 const warnings = [];
 const fail = (msg) => errors.push(msg);
@@ -228,11 +230,30 @@ for (const wb of MAP.wallBuys) {
   }
 }
 
-// --- report -----------------------------------------------------------------
-for (const w of warnings) console.log(`warning: ${w}`);
-if (errors.length) {
-  for (const e of errors) console.error(`error: ${e}`);
-  console.error(`\nMap check failed with ${errors.length} error(s).`);
-  process.exit(1);
+const stats = {
+  width: W,
+  height: H,
+  areas: MAP.areas.length,
+  doors: MAP.doors.length,
+  windows: [...windowsByArea.values()].reduce((a, b) => a + b, 0),
+  wallBuys: MAP.wallBuys.length,
+};
+return { errors, warnings, stats };
 }
-console.log(`Map OK: ${W}x${H} tiles, ${MAP.areas.length} areas, ${MAP.doors.length} doors, ${[...windowsByArea.values()].reduce((a, b) => a + b, 0)} windows, ${MAP.wallBuys.length} wall buys.`);
+
+// --- CLI: check every registered map ----------------------------------------
+if (import.meta.url === `file://${process.argv[1]}`) {
+  let failed = 0;
+  for (const [id, map] of Object.entries(MAPS)) {
+    const { errors, warnings, stats } = checkMap(map);
+    for (const w of warnings) console.log(`[${id}] warning: ${w}`);
+    for (const e of errors) console.error(`[${id}] error: ${e}`);
+    if (errors.length) {
+      failed++;
+      console.error(`[${id}] Map check failed with ${errors.length} error(s).`);
+    } else {
+      console.log(`[${id}] Map OK: ${stats.width}x${stats.height} tiles, ${stats.areas} areas, ${stats.doors} doors, ${stats.windows} windows, ${stats.wallBuys} wall buys.`);
+    }
+  }
+  process.exit(failed ? 1 : 0);
+}

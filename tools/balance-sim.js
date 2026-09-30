@@ -4,6 +4,7 @@
 //
 //   node tools/balance-sim.js                # default scenarios
 //   node tools/balance-sim.js 7 smg,ar 5     # round 7, SMG + AR, 5 runs
+//   MAP=caves node tools/balance-sim.js       # same on another map
 
 import { Game } from '../src/game.js';
 import { WEAPONS } from '../src/data/weapons.js';
@@ -91,7 +92,7 @@ function botFrame(game, state, tick) {
 }
 
 function runRound(round, loadout, { verbose = false, doors = [] } = {}) {
-  const game = new Game();
+  const game = new Game(process.env.MAP || undefined);
   for (const d of game.world.doors) if (doors.includes(d.id)) game.world.openDoor(d);
   game.player.weapons = [];
   for (const id of loadout) game.player.giveWeapon(WEAPONS[id]);

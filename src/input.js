@@ -77,6 +77,7 @@ export class Input {
       decoyPressed: this.anyPressed(CONTROLS.DECOY),
       interactPressed: this.anyPressed(CONTROLS.INTERACT),
       restartPressed: this.anyPressed(CONTROLS.RESTART) || this.buttonsPressed.has(CONTROLS.FIRE_BUTTON),
+      switchMapPressed: this.anyPressed(CONTROLS.SWITCH_MAP),
       weaponSlot,
       weaponScroll: Math.sign(this.wheel),
     };
@@ -93,6 +94,7 @@ export class Input {
       decoyPressed: false,
       interactPressed: false,
       restartPressed: false,
+      switchMapPressed: false,
       weaponSlot: -1,
       weaponScroll: 0,
     };

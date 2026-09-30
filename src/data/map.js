@@ -8,6 +8,7 @@
 //   'P'  player spawn (floor of area 0)
 
 export const MAP = {
+  name: 'Arena',
   rows: [
     '                                              ',
     ' ####W#####W#######W#####W##########W######## ',

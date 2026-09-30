@@ -21,6 +21,7 @@ export const CONTROLS = {
   WEAPON_1: ['Digit1'],
   WEAPON_2: ['Digit2'],
   RESTART: ['Enter', 'Space'],
+  SWITCH_MAP: ['KeyM'],
   FIRE_BUTTON: 0,
   MELEE_BUTTON: 2,
 };
